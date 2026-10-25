@@ -1,0 +1,10 @@
+{
+  "roleKeywords": ["intern", "internship", "junior", "entry level", "fresher", "graduate", "trainee", "engineer", "developer"],
+  "stackKeywords": ["full stack", "fullstack", "next.js", "nextjs", "react", "typescript", "node"],
+  "rejectTitleKeywords": ["senior", "staff", "principal", "lead", "manager", "director", "head of"],
+  "rejectYearsOfExperience": 4,
+  "allowedLocations": ["India", "Bengaluru", "Remote", "Anywhere", "APAC"],
+  "maxAgeDays": 30,
+  "maxJobsToScore": 50,
+  "notifyThreshold": 7
+}

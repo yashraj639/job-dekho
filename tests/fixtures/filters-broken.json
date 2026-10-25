@@ -1,0 +1,9 @@
+{
+  "roleKeywords": ["junior"],
+  "stackKeywords": ["react"],
+  "rejectTitleKeywords": [],
+  "rejectYearsOfExperience": 4,
+  "allowedLocations": ["India"],
+  "maxAgeDays": "thirty",
+  "maxJobsToScore": 50
+}
