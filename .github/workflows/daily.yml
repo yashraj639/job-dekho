@@ -20,6 +20,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The real resume is gitignored and never committed. It is written at
+      # runtime from the RESUME_MD secret. An empty secret fails fast below
+      # when the pipeline refuses to run with an empty resume.
+      - name: Materialize resume from secret
+        env:
+          RESUME_MD: ${{ secrets.RESUME_MD }}
+        run: |
+          printf '%s' "$RESUME_MD" > config/resume.md
+          test -s config/resume.md
+
       - uses: oven-sh/setup-bun@v2
 
       - run: bun install --frozen-lockfile
