@@ -1,23 +1,9 @@
 import { describe, expect, spyOn, test } from "bun:test";
 import { buildPrompt, scoreJob, type GenerateScore } from "../src/score";
-import type { Job, Score } from "../src/types";
+import type { Score } from "../src/types";
+import { makeJob } from "./helpers";
 
 const RESUME = "SECRET_RESUME_MARKER: built a Next.js app at OpenLabs.";
-
-function makeJob(overrides: Partial<Job> = {}): Job {
-  return {
-    id: "remotive:1",
-    source: "remotive",
-    title: "Junior Full Stack Developer",
-    company: "Productiv Team",
-    location: "Worldwide",
-    remote: true,
-    url: "https://remotive.com/remote-jobs/software-dev/example-1",
-    description: "React and TypeScript. Node on the backend.",
-    postedAt: "2026-10-20T09:12:00",
-    ...overrides,
-  };
-}
 
 function validScore(overrides: Partial<Score> = {}): Score {
   return {

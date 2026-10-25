@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { fetchJson } from "../http";
+import { fetchJson, USER_AGENT } from "../http";
 import { errorMessage } from "../log";
 import { stripHtml, truncateDescription } from "../normalize";
 import { JobSchema, type Job } from "../types";
@@ -7,7 +7,6 @@ import { JobSchema, type Job } from "../types";
 const SOURCE = "hn";
 const SEARCH_ENDPOINT =
   "https://hn.algolia.com/api/v1/search_by_date?tags=story,author_whoishiring&hitsPerPage=10";
-const USER_AGENT = "job-dekho/0.1 (personal job search bot)";
 
 const SearchSchema = z.object({
   hits: z.array(

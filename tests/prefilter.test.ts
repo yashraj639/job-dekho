@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { Filters } from "../src/config";
 import { prefilter } from "../src/prefilter";
 import type { Job } from "../src/types";
+import { makeJob } from "./helpers";
 
 const NOW = new Date("2026-10-25T00:00:00Z");
 
@@ -18,21 +19,6 @@ const BASE_FILTERS: Filters = {
 
 function filters(overrides: Partial<Filters> = {}): Filters {
   return { ...BASE_FILTERS, ...overrides };
-}
-
-function makeJob(overrides: Partial<Job> = {}): Job {
-  return {
-    id: "remotive:1",
-    source: "remotive",
-    title: "Junior Full Stack Developer",
-    company: "Example Co",
-    location: "Worldwide",
-    remote: true,
-    url: "https://remotive.com/remote-jobs/software-dev/example-1",
-    description: "React and TypeScript. Node on the backend.",
-    postedAt: "2026-10-20T09:12:00",
-    ...overrides,
-  };
 }
 
 interface Case {

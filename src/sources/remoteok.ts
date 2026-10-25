@@ -1,12 +1,11 @@
 import { z } from "zod";
-import { fetchJson } from "../http";
+import { fetchJson, USER_AGENT } from "../http";
 import { errorMessage } from "../log";
 import { stripHtml, truncateDescription } from "../normalize";
 import { JobSchema, type Job } from "../types";
 
 const SOURCE = "remoteok";
 const ENDPOINT = "https://remoteok.com/api";
-const USER_AGENT = "job-dekho/0.1 (personal job search bot)";
 
 const RemoteOkJobSchema = z.object({
   // Coerced: the API has sent both numbers and numeric strings.

@@ -1,8 +1,7 @@
 import { z } from "zod";
-import { fetchJson } from "../http";
-import { errorMessage } from "../log";
-import { truncateDescription } from "../normalize";
+import { displayCompany, truncateDescription } from "../normalize";
 import { JobSchema, type Job } from "../types";
+import { fetchBoards } from "./boardFetch";
 
 const SOURCE = "lever";
 
@@ -33,7 +32,7 @@ export function normalizeLeverJob(raw: LeverJob, slug: string): Job {
     id: `${SOURCE}:${raw.id}`,
     source: SOURCE,
     title: raw.text.trim(),
-    company: displayCompanyLever(slug),
+    company: displayCompany(slug),
     location: location.trim(),
     remote: remote ? true : null,
     url: raw.hostedUrl,
@@ -42,50 +41,15 @@ export function normalizeLeverJob(raw: LeverJob, slug: string): Job {
   });
 }
 
-/** Kept identical in spirit to the Greenhouse one: "acme-systems" -> "Acme Systems". */
-function displayCompanyLever(slug: string): string {
-  return slug
-    .replace(/[^a-z0-9]+/gi, " ")
-    .trim()
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
-
-function fetchPostingsFor(slug: string): Promise<Job[]> {
-  return fetchJson(
-    `https://api.lever.co/v0/postings/${slug}?mode=json`,
-    LeverResponseSchema,
-  ).then((data) => {
-    const jobs: Job[] = [];
-    let skipped = 0;
-    for (const raw of data) {
-      try {
-        jobs.push(normalizeLeverJob(raw, slug));
-      } catch {
-        skipped++; // one bad listing must not take the board down
-      }
-    }
-    console.log(`source=${SOURCE} company=${slug} in=${data.length} out=${jobs.length} skipped=${skipped}`);
-    return jobs;
-  });
-}
-
-export async function fetchLever(slugs: readonly string[]): Promise<Job[]> {
-  const results = await Promise.allSettled(slugs.map(fetchPostingsFor));
-
-  const jobs: Job[] = [];
-  let failed = 0;
-  results.forEach((result, index) => {
-    const slug = slugs[index] ?? "(unknown)";
-    if (result.status === "rejected") {
-      failed++;
-      console.error(`source=${SOURCE} company=${slug} error=${errorMessage(result.reason)}`);
-    } else {
-      jobs.push(...result.value);
-    }
-  });
-
-  console.log(`source=${SOURCE} in=${slugs.length} companies out=${jobs.length} failed=${failed}`);
-  return jobs;
+export function fetchLever(slugs: readonly string[]): Promise<Job[]> {
+  return fetchBoards(
+    {
+      source: SOURCE,
+      url: (slug) => `https://api.lever.co/v0/postings/${slug}?mode=json`,
+      schema: LeverResponseSchema,
+      postings: (data) => data,
+      normalize: normalizeLeverJob,
+    },
+    slugs,
+  );
 }

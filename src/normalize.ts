@@ -47,3 +47,13 @@ export function truncateDescription(text: string): string {
   if (text.length <= MAX_DESCRIPTION_CHARS) return text;
   return `${text.slice(0, MAX_DESCRIPTION_CHARS - 1).trimEnd()}…`;
 }
+
+/** "acme-systems" -> "Acme Systems". Board slugs are all we know about a company. */
+export function displayCompany(slug: string): string {
+  return slug
+    .replace(/[^a-z0-9]+/gi, " ")
+    .trim()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}

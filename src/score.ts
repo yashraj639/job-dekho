@@ -1,11 +1,11 @@
 import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { errorMessage } from "./log";
+import { truncateDescription } from "./normalize";
 import { ScoreSchema, type Job, type Score } from "./types";
 
 export const DEFAULT_MODEL = "gemini-3.8-flash";
 
-const MAX_DESCRIPTION_CHARS = 6000;
 const MAX_ATTEMPTS = 2;
 
 /**
@@ -30,7 +30,9 @@ score it low and say so in the reason.
 Return only the structured object requested.`;
 
 export function buildPrompt(job: Job, resume: string): { system: string; prompt: string } {
-  const description = job.description.slice(0, MAX_DESCRIPTION_CHARS);
+  // Contract guard: sources truncate too, but a new source that forgets must
+  // not be able to send an unbounded description to the model.
+  const description = truncateDescription(job.description);
   const remote = job.remote === null ? "unknown" : job.remote ? "yes" : "no";
 
   const prompt = [

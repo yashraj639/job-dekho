@@ -1,12 +1,11 @@
 import { z } from "zod";
-import { fetchJson } from "../http";
+import { fetchJson, USER_AGENT } from "../http";
 import { errorMessage } from "../log";
 import { stripHtml, truncateDescription } from "../normalize";
 import { JobSchema, type Job } from "../types";
 
 const SOURCE = "remotive";
 const ENDPOINT = "https://remotive.com/api/remote-jobs?category=software-dev";
-const USER_AGENT = "job-dekho/0.1 (personal job search bot)";
 
 const RemotiveJobSchema = z.object({
   id: z.number(),

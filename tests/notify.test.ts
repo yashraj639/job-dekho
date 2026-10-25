@@ -11,22 +11,8 @@ import {
   shouldSendHeartbeat,
   type Match,
 } from "../src/notify";
-import type { Job, Score } from "../src/types";
-
-function makeJob(overrides: Partial<Job> = {}): Job {
-  return {
-    id: "remotive:1",
-    source: "remotive",
-    title: "Junior Full-Stack Developer",
-    company: "Productiv Team",
-    location: "Remote",
-    remote: true,
-    url: "https://example.com/job",
-    description: "React and TypeScript.",
-    postedAt: "2026-10-20T09:12:00",
-    ...overrides,
-  };
-}
+import type { Score } from "../src/types";
+import { makeJob } from "./helpers";
 
 function makeScore(overrides: Partial<Score> = {}): Score {
   return {
@@ -48,7 +34,12 @@ function makeMatches(count: number): Match[] {
 
 describe("formatJobMessage", () => {
   test("matches the SPEC.md §9 layout exactly", () => {
-    const message = formatJobMessage(makeJob(), makeScore());
+    const job = makeJob({
+      title: "Junior Full-Stack Developer",
+      location: "Remote",
+      url: "https://example.com/job",
+    });
+    const message = formatJobMessage(job, makeScore());
 
     expect(message).toBe(
       [
