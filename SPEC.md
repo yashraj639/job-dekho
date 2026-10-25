@@ -282,7 +282,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       - name: Commit state
         run: |
-          git config user.name "jobhound-bot"
+          git config user.name "job-dekho-bot"
           git config user.email "bot@users.noreply.github.com"
           git add data/state.json
           git diff --cached --quiet || git commit -m "update state"
