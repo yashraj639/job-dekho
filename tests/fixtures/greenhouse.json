@@ -1,0 +1,29 @@
+{
+  "meta": { "total": 2 },
+  "jobs": [
+    {
+      "id": 6136160004,
+      "internal_job_id": 1234567,
+      "title": "Junior Full Stack Engineer",
+      "absolute_url": "https://boards.greenhouse.io/acme-systems/jobs/6136160004",
+      "location": { "name": "Remote - India" },
+      "first_published": "2026-10-20T12:00:00-04:00",
+      "updated_at": "2026-10-21T12:00:00-04:00",
+      "content": "<p>We are looking for a <strong>Junior Full Stack Engineer</strong> to join our team.</p><ul><li>React &amp; TypeScript</li><li>Node.js on the backend</li></ul><p>Apply now.</p>",
+      "departments": [],
+      "offices": []
+    },
+    {
+      "id": 6136160005,
+      "internal_job_id": 1234568,
+      "title": "Graduate Software Engineer",
+      "absolute_url": "https://boards.greenhouse.io/acme-systems/jobs/6136160005",
+      "location": null,
+      "first_published": null,
+      "updated_at": "2026-10-22T09:00:00-04:00",
+      "content": null,
+      "departments": [],
+      "offices": []
+    }
+  ]
+}

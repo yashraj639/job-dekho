@@ -1,4 +1,4 @@
-import { loadFilters, loadResume } from "./config";
+import { loadCompanies, loadFilters, loadResume } from "./config";
 import { dedupe } from "./dedupe";
 import { errorMessage } from "./log";
 import {
@@ -14,12 +14,18 @@ import {
 } from "./notify";
 import { prefilter } from "./prefilter";
 import { DEFAULT_MODEL, createGeminiGenerate, scoreJob } from "./score";
+import { fetchAshby } from "./sources/ashby";
+import { fetchGreenhouse } from "./sources/greenhouse";
+import { fetchHn } from "./sources/hn";
+import { fetchLever } from "./sources/lever";
 import { fetchRemotive } from "./sources/remotive";
+import { fetchRemoteOk } from "./sources/remoteok";
 import { loadState, markNotified, markSeen, pruneState, saveState } from "./state";
 import type { Job, Score } from "./types";
 
 const STATE_PATH = "data/state.json";
 const FILTERS_PATH = "config/filters.json";
+const COMPANIES_PATH = "config/companies.json";
 const RESUME_PATH = "config/resume.md";
 
 function printScore(job: Job, score: Score): void {
@@ -58,12 +64,26 @@ async function main(): Promise<void> {
     return result.failedJobIds;
   };
 
-  const fetched = await fetchRemotive();
-  console.log(`stage=fetch in=0 out=${fetched.length}`);
+  const companies = await loadCompanies(COMPANIES_PATH);
+  console.log(
+    `stage=config boards greenhouse=${companies.greenhouse.length} lever=${companies.lever.length} ashby=${companies.ashby.length}`,
+  );
+
+  // All six sources fetch independently; a dead source returns [] from inside.
+  const perSource = await Promise.all([
+    fetchRemotive(),
+    fetchRemoteOk(),
+    fetchHn(),
+    fetchGreenhouse(companies.greenhouse),
+    fetchLever(companies.lever),
+    fetchAshby(companies.ashby),
+  ]);
+  const fetched = perSource.flat();
+  console.log(`stage=fetch sources=${perSource.length} out=${fetched.length}`);
 
   if (fetched.length === 0) {
     await send([{ text: formatNoResults(), jobId: null }]);
-    console.log("stage=summary fetched=0 deduped=0 prefiltered=0 scored=0 matches=0");
+    console.log("stage=summary fetched=0 deduped=0 prefiltered=0 scored=0 matches=0 sources=6");
     return;
   }
 
@@ -113,7 +133,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `stage=summary fetched=${fetched.length} deduped=${deduped.length} prefiltered=${kept.length} scored=${scored.length} matches=${matches.length}`,
+    `stage=summary fetched=${fetched.length} deduped=${deduped.length} prefiltered=${kept.length} scored=${scored.length} matches=${matches.length} sources=6`,
   );
 }
 

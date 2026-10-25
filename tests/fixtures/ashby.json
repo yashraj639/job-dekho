@@ -1,0 +1,42 @@
+{
+  "jobs": [
+    {
+      "id": "d3bc1ced-3ce4-4086-a050-555055dbb1ff",
+      "title": "Junior Fullstack Engineer",
+      "department": "Product",
+      "team": "Engineering",
+      "employmentType": "FullTime",
+      "location": "Europe",
+      "secondaryLocations": [],
+      "publishedAt": "2026-10-20T09:12:00.000Z",
+      "isListed": true,
+      "isRemote": true,
+      "workplaceType": "Remote",
+      "jobUrl": "https://jobs.ashbyhq.com/acme-systems/d3bc1ced-3ce4-4086-a050-555055dbb1ff",
+      "applyUrl": "https://jobs.ashbyhq.com/acme-systems/d3bc1ced-3ce4-4086-a050-555055dbb1ff/application",
+      "descriptionHtml": "<p>We are looking for a <strong>Junior Fullstack Engineer</strong>.</p><p>You will build with React, TypeScript and Node.js.</p>"
+    },
+    {
+      "id": "e5f2a1b0-a7d2-4f1e-9c5b-000000000002",
+      "title": "Graduate Software Engineer",
+      "department": "Engineering",
+      "location": "Bengaluru, India",
+      "publishedAt": null,
+      "isListed": true,
+      "isRemote": null,
+      "jobUrl": "https://jobs.ashbyhq.com/acme-systems/e5f2a1b0-a7d2-4f1e-9c5b-000000000002",
+      "descriptionHtml": null
+    },
+    {
+      "id": "f7c0d2e1-a7d2-4f1e-9c5b-000000000003",
+      "title": "Secret Unlisted Role",
+      "department": "Engineering",
+      "location": "Remote",
+      "publishedAt": "2026-10-19T09:12:00.000Z",
+      "isListed": false,
+      "isRemote": true,
+      "jobUrl": "https://jobs.ashbyhq.com/acme-systems/f7c0d2e1-a7d2-4f1e-9c5b-000000000003",
+      "descriptionHtml": "<p>Draft posting.</p>"
+    }
+  ]
+}

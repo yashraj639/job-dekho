@@ -1,0 +1,31 @@
+[
+  {
+    "id": "2a55d6c9-c564-443a-be3e-a3851db5a93b",
+    "text": "Software Engineer - Junior Full Stack",
+    "hostedUrl": "https://jobs.lever.co/acme-systems/2a55d6c9-c564-443a-be3e-a3851db5a93b",
+    "applyUrl": "https://jobs.lever.co/acme-systems/2a55d6c9-c564-443a-be3e-a3851db5a93b/apply",
+    "createdAt": 1792767640768,
+    "workplaceType": "Remote",
+    "categories": {
+      "commitment": "Full-time",
+      "team": "Platform",
+      "location": "Remote",
+      "allLocations": ["Remote"]
+    },
+    "descriptionPlain": "We are looking for a Junior Full Stack engineer. Our stack is React, TypeScript and Node.js."
+  },
+  {
+    "id": "b9c33d81-a7d2-4f1e-9c5b-000000000001",
+    "text": "Graduate Engineer",
+    "hostedUrl": "https://jobs.lever.co/acme-systems/b9c33d81-a7d2-4f1e-9c5b-000000000001",
+    "createdAt": null,
+    "workplaceType": null,
+    "categories": {
+      "commitment": "Full-time",
+      "team": "Core Services",
+      "location": "Bengaluru, India",
+      "allLocations": ["Bengaluru, India"]
+    },
+    "descriptionPlain": "Plain text description with no HTML at all."
+  }
+]

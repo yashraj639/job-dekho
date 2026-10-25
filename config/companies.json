@@ -1,0 +1,5 @@
+{
+  "greenhouse": ["vercel", "figma", "stripe", "cloudflare", "datadog", "duolingo", "mattermost", "relativity", "coast"],
+  "lever": ["spotify", "gohighlevel", "curai", "shieldai", "findigs", "gausslabs", "loftorbital", "atomcomputing"],
+  "ashby": ["linear", "ramp", "attio", "openrouter", "browserbase", "supabase", "livekit", "middesk", "checkly", "thundercompute"]
+}

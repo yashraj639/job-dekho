@@ -1,0 +1,34 @@
+[
+  {
+    "last_updated": 1792857604,
+    "legal": "API Terms of Service: Please link back (with follow, and without nofollow!) to the URL on Remote OK and mention Remote OK as a source."
+  },
+  {
+    "slug": "remote-junior-full-stack-developer-acme-systems-1137568",
+    "id": "1137568",
+    "epoch": 1792857602,
+    "date": "2026-10-24T00:00:02+00:00",
+    "company": "Acme Systems",
+    "company_logo": "https://remoteOkay.com/api/remote-jobs/logo/1137568",
+    "position": "Junior Full Stack Developer",
+    "tags": ["react", "typescript", "node"],
+    "description": "<p>We are looking for a <strong>Junior Full Stack Developer</strong>.</p><ul><li>React &amp; TypeScript</li><li>Node.js on the backend</li></ul><p>Apply now &mdash; we reply to everyone.</p>",
+    "location": "Worldwide",
+    "apply_url": "https://remoteOK.com/remote-jobs/remote-junior-full-stack-developer-acme-systems-1137568",
+    "url": "https://remoteOK.com/remote-jobs/remote-junior-full-stack-developer-acme-systems-1137568"
+  },
+  {
+    "slug": "remote-graduate-engineer-globex-1137600",
+    "id": 1137600,
+    "epoch": 1792860000,
+    "date": null,
+    "company": "Globex",
+    "company_logo": "https://remoteOkay.com/api/remote-jobs/logo/1137600",
+    "position": "Graduate Engineer",
+    "tags": ["python"],
+    "description": "Plain text description with no HTML at all.",
+    "location": "",
+    "apply_url": "https://remoteOK.com/remote-jobs/remote-graduate-engineer-globex-1137600",
+    "url": "https://remoteOK.com/remote-jobs/remote-graduate-engineer-globex-1137600"
+  }
+]
