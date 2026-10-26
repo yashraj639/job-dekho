@@ -40,7 +40,7 @@ jobs:
           # `||` matters here: an unset repository variable resolves to an empty
           # string, which would override the code default instead of falling
           # back to it.
-          LLM_MODEL: ${{ vars.LLM_MODEL || 'gemini-3.8-flash' }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL || vars.LLM_MODEL || 'gemini-3.1-flash-lite' }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 

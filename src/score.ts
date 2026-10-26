@@ -9,7 +9,7 @@ import { ScoreSchema, type Job, type Score } from "./types";
 // stable. Remove this line once we upgrade to the new generateText output API.
 (globalThis as Record<string, unknown>)["AI_SDK_LOG_WARNINGS"] = false;
 
-export const DEFAULT_MODEL = "gemini-3.8-flash";
+export const DEFAULT_MODEL = "gemini-3.1-flash-lite";
 
 const MAX_ATTEMPTS = 2;
 
