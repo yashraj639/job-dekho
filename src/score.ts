@@ -4,6 +4,11 @@ import { errorMessage } from "./log";
 import { truncateDescription } from "./normalize";
 import { ScoreSchema, type Job, type Score } from "./types";
 
+// Suppress the AI SDK deprecation warning on generateObject — it still works
+// in ai@7 and is the correct API for structured output until the migration is
+// stable. Remove this line once we upgrade to the new generateText output API.
+(globalThis as Record<string, unknown>)["AI_SDK_LOG_WARNINGS"] = false;
+
 export const DEFAULT_MODEL = "gemini-3.8-flash";
 
 const MAX_ATTEMPTS = 2;
@@ -61,8 +66,21 @@ export function buildPrompt(job: Job, resume: string): { system: string; prompt:
 export type GenerateScore = (input: { system: string; prompt: string }) => Promise<unknown>;
 
 /**
+ * A quota failure means "stop asking today", not "try again". The SDK puts the
+ * HTTP status on its error object; tests throw plain Errors, so fall back to
+ * matching the message. Retrying a 429 only eats tomorrow's quota too.
+ */
+export function isQuotaError(error: unknown): boolean {
+  if (typeof error === "object" && error !== null && "statusCode" in error) {
+    if ((error as { statusCode: unknown }).statusCode === 429) return true;
+  }
+  return /\b429\b|quota|resource_exhausted/i.test(errorMessage(error));
+}
+
+/**
  * Score one job. Retries once on a failed call or invalid output, then gives
- * up and returns null. Never throws: one bad job must not kill the run.
+ * up and returns null. Quota errors are never retried. Never throws: one bad
+ * job must not kill the run.
  */
 export async function scoreJob(
   job: Job,
@@ -79,6 +97,7 @@ export async function scoreJob(
       lastError = parsed.error;
     } catch (error) {
       lastError = error;
+      if (isQuotaError(error)) break; // the rest of the batch would fail too
     }
   }
 
@@ -102,6 +121,9 @@ export function createGeminiGenerate(modelId: string): GenerateScore {
       prompt,
       temperature: 0,
       // No tools, on purpose: job text must not be able to trigger actions.
+      // No SDK retries: a 429 must cost exactly one request, and scoreJob
+      // already decides what to retry.
+      maxRetries: 0,
     });
     return object;
   };

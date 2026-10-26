@@ -62,12 +62,38 @@ describe("scoreJob", () => {
     let calls = 0;
     const generate: GenerateScore = async () => {
       calls++;
-      if (calls === 1) throw new Error("429 rate limited");
+      if (calls === 1) throw new Error("network reset");
       return validScore();
     };
 
     expect(await scoreJob(makeJob(), RESUME, generate)).toEqual(validScore());
     expect(calls).toBe(2);
+  });
+
+  test("does not retry a quota error — it would eat tomorrow's quota too", async () => {
+    const errorLog = spyOn(console, "error").mockImplementation(() => {});
+    let calls = 0;
+    const generate: GenerateScore = async () => {
+      calls++;
+      throw new Error("429 You exceeded your current quota");
+    };
+
+    expect(await scoreJob(makeJob(), RESUME, generate)).toBeNull();
+    expect(calls).toBe(1);
+    errorLog.mockRestore();
+  });
+
+  test("does not retry a 429 status from the API client", async () => {
+    const errorLog = spyOn(console, "error").mockImplementation(() => {});
+    let calls = 0;
+    const generate: GenerateScore = async () => {
+      calls++;
+      throw Object.assign(new Error("resource exhausted"), { statusCode: 429 });
+    };
+
+    expect(await scoreJob(makeJob(), RESUME, generate)).toBeNull();
+    expect(calls).toBe(1);
+    errorLog.mockRestore();
   });
 
   test("retries once when the output fails validation", async () => {

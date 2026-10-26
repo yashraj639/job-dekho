@@ -93,7 +93,9 @@ async function main(): Promise<void> {
   const kept = prefilter(deduped, filters, now);
   console.log(`stage=prefilter in=${deduped.length} out=${kept.length}`);
 
-  const modelId = process.env.LLM_MODEL ?? DEFAULT_MODEL;
+  // `||`, not `??`: an empty LLM_MODEL (a blank .env line, an unset CI var)
+  // must fall back to the default instead of becoming a model id of "".
+  const modelId = process.env.LLM_MODEL || DEFAULT_MODEL;
   const generate = createGeminiGenerate(modelId);
   console.log(`stage=score model=${modelId} in=${kept.length}`);
 

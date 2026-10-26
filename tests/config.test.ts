@@ -8,7 +8,7 @@ test("the shipped config/filters.json is valid", async () => {
   const filters = await loadFilters(SHIPPED_FILTERS);
 
   expect(filters.roleKeywords).toContain("junior");
-  expect(filters.maxJobsToScore).toBe(50);
+  expect(filters.maxJobsToScore).toBe(15);
 });
 
 test("a missing config file is a clear error", async () => {

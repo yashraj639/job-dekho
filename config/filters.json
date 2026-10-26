@@ -5,6 +5,6 @@
   "rejectYearsOfExperience": 4,
   "allowedLocations": ["India", "Bengaluru", "Remote", "Anywhere", "APAC"],
   "maxAgeDays": 30,
-  "maxJobsToScore": 50,
+  "maxJobsToScore": 15,
   "notifyThreshold": 7
 }
