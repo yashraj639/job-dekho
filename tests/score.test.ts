@@ -1,5 +1,10 @@
 import { describe, expect, spyOn, test } from "bun:test";
-import { buildPrompt, scoreJob, type GenerateScore } from "../src/score";
+import {
+  buildPrompt,
+  extractQuotaRetryMs,
+  scoreJob,
+  type GenerateScore,
+} from "../src/score";
 import type { Score } from "../src/types";
 import { makeJob } from "./helpers";
 
@@ -70,29 +75,71 @@ describe("scoreJob", () => {
     expect(calls).toBe(2);
   });
 
-  test("does not retry a quota error — it would eat tomorrow's quota too", async () => {
+  test("waits out a quota error and retries once", async () => {
     const errorLog = spyOn(console, "error").mockImplementation(() => {});
+    const sleeps: number[] = [];
     let calls = 0;
     const generate: GenerateScore = async () => {
       calls++;
-      throw new Error("429 You exceeded your current quota");
+      if (calls === 1) throw Object.assign(new Error("quota exceeded"), { statusCode: 429 });
+      return validScore();
     };
 
-    expect(await scoreJob(makeJob(), RESUME, generate)).toBeNull();
-    expect(calls).toBe(1);
+    const result = await scoreJob(makeJob(), RESUME, generate, {
+      sleep: (ms) => {
+        sleeps.push(ms);
+        return Promise.resolve();
+      },
+    });
+
+    expect(result).toEqual(validScore());
+    expect(calls).toBe(2);
+    expect(sleeps).toEqual([60_000]); // no retry window stated: default
+    expect(errorLog).not.toHaveBeenCalled();
     errorLog.mockRestore();
   });
 
-  test("does not retry a 429 status from the API client", async () => {
+  test("waits only once for quota errors, then gives up", async () => {
     const errorLog = spyOn(console, "error").mockImplementation(() => {});
+    const sleeps: number[] = [];
     let calls = 0;
     const generate: GenerateScore = async () => {
       calls++;
-      throw Object.assign(new Error("resource exhausted"), { statusCode: 429 });
+      throw Object.assign(new Error("429 resource exhausted, retry in 30s"), { statusCode: 429 });
     };
 
-    expect(await scoreJob(makeJob(), RESUME, generate)).toBeNull();
-    expect(calls).toBe(1);
+    const result = await scoreJob(makeJob(), RESUME, generate, {
+      sleep: (ms) => {
+        sleeps.push(ms);
+        return Promise.resolve();
+      },
+    });
+
+    expect(result).toBeNull();
+    expect(calls).toBe(3); // 2 normal attempts + 1 quota retry, no second sleep
+    expect(sleeps).toEqual([30_000]);
+    expect(errorLog).toHaveBeenCalled();
+    errorLog.mockRestore();
+  });
+
+  test("non-quota errors never trigger the quota wait", async () => {
+    const errorLog = spyOn(console, "error").mockImplementation(() => {});
+    const sleeps: number[] = [];
+    let calls = 0;
+    const generate: GenerateScore = async () => {
+      calls++;
+      throw new Error("network reset");
+    };
+
+    await scoreJob(makeJob(), RESUME, generate, {
+      sleep: (ms) => {
+        sleeps.push(ms);
+        return Promise.resolve();
+      },
+    });
+
+    expect(calls).toBe(2);
+    expect(sleeps).toEqual([]);
     errorLog.mockRestore();
   });
 
@@ -155,5 +202,28 @@ describe("scoreJob", () => {
     await scoreJob(makeJob(), RESUME, generate);
 
     expect(inputs).toEqual([buildPrompt(makeJob(), RESUME)]);
+  });
+});
+
+describe("extractQuotaRetryMs", () => {
+  test("parses the retry window out of the real Gemini error text", () => {
+    const error = new Error(
+      "Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_requests, " +
+        "limit: 15 ... See https://ai.dev/rate-limit. * Quota exceeded ... " +
+        "Please retry in 58.915856825s.",
+    );
+    expect(extractQuotaRetryMs(error)).toBeCloseTo(58_916, -3);
+  });
+
+  test("defaults to 60s when no window is stated", () => {
+    expect(extractQuotaRetryMs(new Error("429 You exceeded your current quota"))).toBe(60_000);
+    expect(extractQuotaRetryMs(undefined)).toBe(60_000);
+    expect(extractQuotaRetryMs(new Error("retry in soon"))).toBe(60_000);
+    expect(extractQuotaRetryMs(new Error("retry in NaNs"))).toBe(60_000);
+    expect(extractQuotaRetryMs({ notAnError: true })).toBe(60_000);
+  });
+
+  test("caps nonsense windows at 90s", () => {
+    expect(extractQuotaRetryMs(new Error("Please retry in 300s."))).toBe(90_000);
   });
 });

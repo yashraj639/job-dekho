@@ -13,6 +13,30 @@ export const DEFAULT_MODEL = "gemini-3.1-flash-lite";
 
 const MAX_ATTEMPTS = 2;
 
+/** Plain timing helper. Exported so index.ts can reuse it to space out calls. */
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Wait when the error does not state a retry window. */
+const QUOTA_RETRY_MS = 60_000;
+/** Hard cap so a nonsense error string can never stall the run. */
+const QUOTA_RETRY_CAP_MS = 90_000;
+
+/**
+ * Free-tier 429s state a per-minute window ("retry in 58.9s"). Returns the
+ * wait in ms so the caller can sleep it out: for a per-minute quota that is
+ * usually all it takes. Defaulted to a minute and capped, since the retry
+ * window is untrusted text from an error message.
+ */
+export function extractQuotaRetryMs(error: unknown): number {
+  const match = /retry in ([\d.]+)s/i.exec(errorMessage(error));
+  if (match === null) return QUOTA_RETRY_MS;
+  const seconds = Number(match[1]);
+  const ms = Number.isFinite(seconds) ? seconds * 1000 : QUOTA_RETRY_MS;
+  return Math.min(ms, QUOTA_RETRY_CAP_MS);
+}
+
 /**
  * Verbatim from SPEC.md §8. The job listing is data, never instructions:
  * the model gets no tools, so a hostile listing cannot call anything.
@@ -66,9 +90,10 @@ export function buildPrompt(job: Job, resume: string): { system: string; prompt:
 export type GenerateScore = (input: { system: string; prompt: string }) => Promise<unknown>;
 
 /**
- * A quota failure means "stop asking today", not "try again". The SDK puts the
- * HTTP status on its error object; tests throw plain Errors, so fall back to
- * matching the message. Retrying a 429 only eats tomorrow's quota too.
+ * The SDK puts the HTTP status on its error object; tests throw plain Errors,
+ * so fall back to matching the message. Two quota shapes exist and behave
+ * differently: the per-minute one clears after the retry window, the daily
+ * one comes straight back on the next call.
  */
 export function isQuotaError(error: unknown): boolean {
   if (typeof error === "object" && error !== null && "statusCode" in error) {
@@ -78,26 +103,44 @@ export function isQuotaError(error: unknown): boolean {
 }
 
 /**
- * Score one job. Retries once on a failed call or invalid output, then gives
- * up and returns null. Quota errors are never retried. Never throws: one bad
- * job must not kill the run.
+ * Score one job. Make at most 2 attempts before giving up and returning null,
+ * on failed calls or invalid output alike. A quota error earns one extra
+ * attempt after waiting out the retry window (the free tier limit is
+ * per-minute, so the wait usually clears it). At most one sleep per job: if a
+ * quota error comes right back after the wait, it is likely the daily cap and
+ * retrying again cannot help. Never throws: one bad job must not kill the
+ * run. Worst case through that path is 3 model calls, the last one instant
+ * and failed.
+ *
+ * `sleep` is injectable so tests can observe the wait without real time.
  */
 export async function scoreJob(
   job: Job,
   resume: string,
   generate: GenerateScore,
+  opts: { sleep?: (ms: number) => Promise<void> } = {},
 ): Promise<Score | null> {
   const input = buildPrompt(job, resume);
+  const doze = opts.sleep ?? sleep;
   let lastError: unknown;
+  let attempts = 0;
+  let quotaWaited = false;
 
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+  while (attempts < MAX_ATTEMPTS) {
+    attempts++;
     try {
       const parsed = ScoreSchema.safeParse(await generate(input));
       if (parsed.success) return parsed.data;
       lastError = parsed.error;
     } catch (error) {
       lastError = error;
-      if (isQuotaError(error)) break; // the rest of the batch would fail too
+      if (isQuotaError(error) && !quotaWaited) {
+        quotaWaited = true;
+        // The wait-and-retry does not spend the normal attempt budget; a
+        // per-minute quota hit is a scheduling problem, not a model problem.
+        attempts--;
+        await doze(extractQuotaRetryMs(error));
+      }
     }
   }
 

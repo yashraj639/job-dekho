@@ -13,7 +13,7 @@ import {
   type PostMessage,
 } from "./notify";
 import { prefilter } from "./prefilter";
-import { DEFAULT_MODEL, createGeminiGenerate, scoreJob } from "./score";
+import { DEFAULT_MODEL, createGeminiGenerate, scoreJob, sleep } from "./score";
 import { fetchAshby } from "./sources/ashby";
 import { fetchGreenhouse } from "./sources/greenhouse";
 import { fetchHn } from "./sources/hn";
@@ -27,6 +27,11 @@ const STATE_PATH = "data/state.json";
 const FILTERS_PATH = "config/filters.json";
 const COMPANIES_PATH = "config/companies.json";
 const RESUME_PATH = "config/resume.md";
+
+// Gemini's free tier allows ~15 requests per minute, and a full batch is
+// capped at 15 calls. Spacing them out keeps the whole batch under the limit
+// instead of tripping a per-minute 429 partway through.
+const SCORE_GAP_MS = 5000;
 
 function printScore(job: Job, score: Score): void {
   console.log(`${score.score.toFixed(1)}/10 ${score.verdict}  ${job.title} @ ${job.company}`);
@@ -100,7 +105,8 @@ async function main(): Promise<void> {
   console.log(`stage=score model=${modelId} in=${kept.length}`);
 
   const scored: Match[] = [];
-  for (const job of kept) {
+  for (const [i, job] of kept.entries()) {
+    if (i > 0) await sleep(SCORE_GAP_MS);
     const score = await scoreJob(job, resume, generate);
     if (score) scored.push({ job, score });
   }
