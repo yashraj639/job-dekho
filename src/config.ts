@@ -16,7 +16,7 @@ export const FiltersSchema = z.object({
 });
 export type Filters = z.infer<typeof FiltersSchema>;
 
-export async function loadFilters(path: string): Promise<Filters> {
+async function loadConfig<T>(path: string, schema: z.ZodType<T>): Promise<T> {
   const file = Bun.file(path);
   if (!(await file.exists())) throw new Error(`missing config file ${path}`);
 
@@ -27,11 +27,15 @@ export async function loadFilters(path: string): Promise<Filters> {
     throw new Error(`config file ${path} is not valid JSON`);
   }
 
-  const parsed = FiltersSchema.safeParse(raw);
+  const parsed = schema.safeParse(raw);
   if (!parsed.success) {
     throw new Error(`config file ${path} is invalid: ${errorMessage(parsed.error)}`);
   }
   return parsed.data;
+}
+
+export async function loadFilters(path: string): Promise<Filters> {
+  return loadConfig(path, FiltersSchema);
 }
 
 /** Per-company job boards: which company slugs each board API should fetch. */
@@ -43,21 +47,7 @@ export const CompaniesSchema = z.object({
 export type Companies = z.infer<typeof CompaniesSchema>;
 
 export async function loadCompanies(path: string): Promise<Companies> {
-  const file = Bun.file(path);
-  if (!(await file.exists())) throw new Error(`missing config file ${path}`);
-
-  let raw: unknown;
-  try {
-    raw = await file.json();
-  } catch {
-    throw new Error(`config file ${path} is not valid JSON`);
-  }
-
-  const parsed = CompaniesSchema.safeParse(raw);
-  if (!parsed.success) {
-    throw new Error(`config file ${path} is invalid: ${errorMessage(parsed.error)}`);
-  }
-  return parsed.data;
+  return loadConfig(path, CompaniesSchema);
 }
 
 /** The resume is personal data: callers must never log the result. */
