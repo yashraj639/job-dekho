@@ -5,7 +5,7 @@ import {
   scoreJob,
   type GenerateScore,
 } from "../src/score";
-import type { Score } from "../src/types";
+import { ScoreSchema, type Score } from "../src/types";
 import { makeJob } from "./helpers";
 
 const RESUME = "SECRET_RESUME_MARKER: built a Next.js app at OpenLabs.";
@@ -53,6 +53,17 @@ describe("buildPrompt", () => {
 
     expect(prompt).toContain("Location: unknown");
     expect(prompt).toContain("Remote: unknown");
+  });
+});
+
+describe("ScoreSchema", () => {
+  // Regression: Gemini's structured output ignores length hints, so reasons
+  // have no enforced length. Capping them (240, then 400) made verbose
+  // listings fail validation and silently dropped the same jobs every run.
+  test("does not reject verbose reasons", () => {
+    expect(ScoreSchema.safeParse(validScore({ reason: "a".repeat(240) })).success).toBeTrue();
+    expect(ScoreSchema.safeParse(validScore({ reason: "a".repeat(400) })).success).toBeTrue();
+    expect(ScoreSchema.safeParse(validScore({ reason: "a".repeat(2000) })).success).toBeTrue();
   });
 });
 
