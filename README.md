@@ -24,7 +24,7 @@ flowchart LR
 
 - **Deterministic first, LLM second.** Regex rules kill most noise for free, so the model only
   sees jobs that survived keyword, location, age and experience gates. Cheap, and the
-  50-jobs-per-run cap is a hard config ceiling.
+  15-jobs-per-run cap keeps a run inside one day of Gemini's free-tier quota.
 - **State is a plain JSON file.** `data/state.json` remembers every job shown, prevents
   double-pings, and is pruned to 90 days so it never grows unbounded. CI commits it back
   after every run.
@@ -92,7 +92,7 @@ run. Required secrets/vars:
 - `GOOGLE_GENERATIVE_AI_API_KEY`: Gemini scoring
 - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`: notifications
 - `RESUME_MD`: your resume as markdown, written to `config/resume.md` at runtime
-- `LLM_MODEL` (optional, defaults to `gemini-3.8-flash`)
+- `LLM_MODEL` (optional, defaults to `gemini-3.1-flash-lite`)
 
 ## Non-goals
 

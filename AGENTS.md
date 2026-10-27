@@ -62,7 +62,7 @@ Always run `bun test` and `bunx tsc --noEmit` before saying a task is done.
 
 - Do not add auto-apply or auto-send features. Drafts only, and I send them myself.
 - Do not change the Telegram alert format without asking.
-- Do not raise the 50-jobs-per-run LLM cap or change the score threshold without asking.
+- Do not raise the 15-jobs-per-run LLM cap or change the score threshold without asking.
 - Do not edit `data/state.json` by hand or in tests; use the state module.
 - Do not touch `.github/workflows/` unless the task is about CI.
 

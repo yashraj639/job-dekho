@@ -29,7 +29,7 @@ A small pipeline that finds internship and junior roles, scores them against my 
 | Runtime | Bun + TypeScript | Matches my stack, fast startup in CI |
 | Validation | Zod | Strict schemas for API responses and LLM output |
 | LLM | Google Gemini via Vercel AI SDK (`generateObject`) | Structured output, already familiar |
-| Model | `gemini-3.8-flash` by default, overridable via `LLM_MODEL` env var | Scoring is a simple task, no need for a big model |
+| Model | `gemini-3.1-flash-lite` by default, overridable via `LLM_MODEL` env var | Scoring is a simple task, and the free tier's 20 requests/day cap on bigger models is the real constraint |
 | State | `data/state.json` committed back to the repo | GitHub Actions has no persistent disk; simplest reliable option |
 | Notifications | Telegram Bot API | One HTTP call, works on phone instantly |
 | Scheduler | GitHub Actions cron | Free, no server |
@@ -154,7 +154,9 @@ Cheap checks that run **before** the LLM. Configurable in `config/filters.json`.
 - **Location:** keep if `remote === true`, or location matches `India`, `Bengaluru`, `Remote`, `Anywhere`, `APAC`
 - **Freshness:** skip anything with `postedAt` older than 30 days (if known)
 
-Cap the LLM stage at **50 jobs per run** (highest-keyword-hit first) to put a hard ceiling on cost.
+Cap the LLM stage at **15 jobs per run** (highest-keyword-hit first). The number is set by
+Gemini's free-tier daily request quota, not by cost: a run must fit in one day's allowance
+with headroom for a manual re-run.
 
 ---
 
