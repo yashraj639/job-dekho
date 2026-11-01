@@ -26,7 +26,7 @@ For a real local run, set those same environment variables and run `bun run src/
 
 - Primary discovery: Gemini uses Google Search grounding to find fresh jobs and direct application links.
 - Direct company boards: Greenhouse, Lever and Ashby. Add company slugs in `config/companies.json`.
-- Trial fallback sources: Remotive, RemoteOK and Hacker News Who Is Hiring. They stay enabled for the first week so results can be compared.
+- Trial mode currently runs Gemini only (`GEMINI_ONLY=true`). Remotive, RemoteOK, Hacker News, Greenhouse, Lever and Ashby remain in the code and can be restored by changing that workflow value to `false`.
 - `config/filters.json` controls role, technology, location, seniority and freshness matches. Direct company board listings are shown first.
 - A second **Resume match** alert catches additional jobs that overlap with the skills in `resumeKeywords`. Jobs already in the simple alerts are not repeated.
 

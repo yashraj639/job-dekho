@@ -33,7 +33,7 @@ src/
 
 1. Gemini Google Search grounding, which looks for fresh postings and direct application URLs.
 2. Direct company career pages: Greenhouse, Lever and Ashby, configured in `config/companies.json`.
-3. Trial fallback sources: Remotive, RemoteOK and Hacker News Who Is Hiring.
+3. Fallback sources: Remotive, RemoteOK and Hacker News Who Is Hiring. The workflow can pause all fallback sources with `GEMINI_ONLY=true` during the trial.
 
 Direct company listings appear first when choosing which jobs to alert about. Every source returns `Job[]`, catches failures, uses a 10-second timeout, and retries once. A bad source must not stop the other sources.
 

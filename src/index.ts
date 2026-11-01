@@ -57,22 +57,28 @@ async function main(): Promise<void> {
     `stage=config boards greenhouse=${companies.greenhouse.length} lever=${companies.lever.length} ashby=${companies.ashby.length}`,
   );
 
-  // All seven sources fetch independently; a dead source returns [] from inside.
-  const perSource = await Promise.all([
-    fetchGemini(now),
-    fetchRemotive(),
-    fetchRemoteOk(),
-    fetchHn(),
-    fetchGreenhouse(companies.greenhouse),
-    fetchLever(companies.lever),
-    fetchAshby(companies.ashby),
-  ]);
+  const geminiOnly = process.env.GEMINI_ONLY === "true";
+  console.log(`stage=mode geminiOnly=${geminiOnly}`);
+
+  // All enabled sources fetch independently; a dead source returns [] from inside.
+  const sourceRequests = geminiOnly
+    ? [fetchGemini(now)]
+    : [
+        fetchGemini(now),
+        fetchRemotive(),
+        fetchRemoteOk(),
+        fetchHn(),
+        fetchGreenhouse(companies.greenhouse),
+        fetchLever(companies.lever),
+        fetchAshby(companies.ashby),
+      ];
+  const perSource = await Promise.all(sourceRequests);
   const fetched = perSource.flat();
   console.log(`stage=fetch sources=${perSource.length} out=${fetched.length}`);
 
   if (fetched.length === 0) {
     await send([{ text: formatNoResults(), jobId: null }]);
-    console.log("stage=summary fetched=0 deduped=0 matched=0 notified=0 sources=7");
+    console.log(`stage=summary fetched=0 deduped=0 matched=0 notified=0 sources=${perSource.length}`);
     return;
   }
 
@@ -105,7 +111,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `stage=summary fetched=${fetched.length} deduped=${deduped.length} general=${matches.length} resumeExtra=${resumeMatches.length} sources=7`,
+    `stage=summary fetched=${fetched.length} deduped=${deduped.length} general=${matches.length} resumeExtra=${resumeMatches.length} sources=${perSource.length}`,
   );
 }
 
