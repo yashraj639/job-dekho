@@ -1,9 +1,9 @@
 {
-  "roleKeywords": ["intern", "internship", "full time", "full-time", "engineer", "developer"],
+  "roleKeywords": ["software engineer", "software developer", "software engineering", "full stack", "fullstack", "AI engineer", "AI intern", "machine learning engineer", "machine learning intern", "ML engineer", "ML intern", "backend engineer", "front-end engineer", "frontend engineer"],
   "stackKeywords": ["ai", "artificial intelligence", "machine learning", "full stack", "fullstack", "next.js", "nextjs", "react", "typescript", "node"],
   "resumeKeywords": ["javascript", "typescript", "react", "next.js", "node.js", "express", "tailwind", "postgresql", "mongodb", "prisma", "langchain", "langgraph", "rag", "openai", "gemini"],
   "rejectTitleKeywords": ["senior", "staff", "principal", "lead", "manager", "director", "head of"],
   "rejectYearsOfExperience": 4,
-  "allowedLocations": ["India", "Bengaluru", "Bangalore", "Hyderabad", "Mumbai", "Delhi", "New Delhi", "Pune", "Chennai", "Gurugram", "Gurgaon", "Noida", "Kolkata", "Kochi", "Ahmedabad", "Jaipur", "Thiruvananthapuram", "Remote", "Anywhere", "APAC"],
+  "allowedLocations": ["India", "Bengaluru", "Bangalore", "Hyderabad", "Mumbai", "Delhi", "New Delhi", "Pune", "Chennai", "Gurugram", "Gurgaon", "Noida", "Kolkata", "Kochi", "Ahmedabad", "Jaipur", "Thiruvananthapuram", "Remote", "Anywhere", "Worldwide", "Global", "APAC"],
   "maxAgeDays": 30
 }

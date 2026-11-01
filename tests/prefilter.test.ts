@@ -7,12 +7,12 @@ import { makeJob } from "./helpers";
 const NOW = new Date("2026-10-25T00:00:00Z");
 
 const BASE_FILTERS: Filters = {
-  roleKeywords: ["intern", "internship", "junior", "entry level", "fresher", "graduate", "trainee", "engineer", "developer", "full time", "full-time"],
+  roleKeywords: ["software engineer", "software developer", "software engineering", "full stack", "fullstack", "AI engineer", "AI intern", "machine learning engineer", "machine learning intern", "ML engineer", "ML intern", "backend engineer", "front-end engineer", "frontend engineer"],
   stackKeywords: ["ai", "artificial intelligence", "machine learning", "full stack", "fullstack", "next.js", "nextjs", "react", "typescript", "node"],
   resumeKeywords: ["typescript", "react", "prisma", "langchain"],
   rejectTitleKeywords: ["senior", "staff", "principal", "lead", "manager", "director", "head of"],
   rejectYearsOfExperience: 4,
-  allowedLocations: ["India", "Bengaluru", "Hyderabad", "Mumbai", "Remote", "Anywhere", "APAC"],
+  allowedLocations: ["India", "Bengaluru", "Hyderabad", "Mumbai", "Remote", "Anywhere", "Worldwide", "Global", "APAC"],
   maxAgeDays: 30,
 };
 
@@ -31,13 +31,15 @@ const CASES: Case[] = [
   // Baseline
   { name: "junior role with a matching stack", job: {}, keep: true },
 
-  // Role level: at least one must match
-  { name: "intern in the title", job: { title: "Intern - Backend" }, keep: true },
-  { name: "trainee in the title", job: { title: "Trainee Engineer" }, keep: true },
+  // Target role phrase must appear in the title
+  { name: "software engineering intern", job: { title: "Software Engineering Intern" }, keep: true },
+  { name: "AI intern", job: { title: "AI Intern" }, keep: true },
+  { name: "rejects unrelated internship even with tech terms in the description", job: { title: "Data Analyst Intern", description: "Uses AI, React and TypeScript." }, keep: false },
+  { name: "trainee software engineer", job: { title: "Software Engineer Trainee" }, keep: true },
   { name: "graduate in the title", job: { title: "Graduate Software Engineer" }, keep: true },
   {
     name: "entry level written with a hyphen",
-    job: { title: "Entry-Level Developer" },
+    job: { title: "Entry-Level Software Developer" },
     keep: true,
   },
   {
@@ -46,8 +48,18 @@ const CASES: Case[] = [
     keep: true,
   },
   {
-    name: "no role or employment signal at all",
-    job: { title: "Product Analyst", description: "React and TypeScript." },
+    name: "does not accept a role keyword found only in the description",
+    job: { title: "Product Analyst", description: "Work with a software engineer on React and TypeScript." },
+    keep: false,
+  },
+  {
+    name: "rejects customer support even when the description mentions engineering and AI",
+    job: { title: "Customer Support Specialist", description: "Work with a software engineer on AI products using React." },
+    keep: false,
+  },
+  {
+    name: "rejects sales engineer despite AI keywords in the description",
+    job: { title: "Commercial Sales Engineer", description: "Sell AI products built with React and TypeScript alongside a software engineer." },
     keep: false,
   },
   {
@@ -61,7 +73,7 @@ const CASES: Case[] = [
 
   // Stack: at least one must match
   { name: "AI engineering role", job: { title: "AI Engineer", description: "Build artificial intelligence tools." }, keep: true },
-  { name: "full-time developer role", job: { title: "Full-Time Developer", description: "Build with React." }, keep: true },
+  { name: "full-time full-stack developer role", job: { title: "Full-Time Full-Stack Developer", description: "Build with React." }, keep: true },
   {
     name: "no matching stack keyword",
     job: { title: "Junior Marketing Assistant", description: "Content writing only." },
@@ -69,10 +81,10 @@ const CASES: Case[] = [
   },
   {
     name: "full stack written with a hyphen",
-    job: { title: "Junior Developer", description: "We do full-stack development in house." },
+    job: { title: "Junior Full-Stack Developer", description: "We build full-stack applications in house." },
     keep: true,
   },
-  { name: "nextjs without the dot", job: { title: "Junior Developer", description: "nextjs" }, keep: true },
+  { name: "nextjs without the dot", job: { title: "Junior Software Developer", description: "nextjs" }, keep: true },
 
   // Seniority: rejected from the title
   { name: "senior in the title", job: { title: "Senior Full Stack Developer" }, keep: false },
@@ -93,7 +105,10 @@ const CASES: Case[] = [
   { name: "6-8 years is rejected", job: { description: "React. 6–8 years." }, keep: false },
 
   // Location: remote wins, otherwise the location must be allowed
-  { name: "remote overrides an overseas location", job: { location: "Berlin, Germany" }, keep: true },
+  { name: "rejects remote role restricted to Sweden", job: { location: "Remote (Sweden)" }, keep: false },
+  { name: "rejects remote role restricted to Germany", job: { location: "Remote - Germany" }, keep: false },
+  { name: "accepts remote role available in India", job: { location: "Remote (India)" }, keep: true },
+  { name: "accepts remote role available worldwide", job: { location: "Remote, Worldwide" }, keep: true },
   { name: "on-site in India is fine", job: { location: "Bengaluru, India", remote: false }, keep: true },
   { name: "city-only Indian location is fine", job: { location: "Hyderabad", remote: false }, keep: true },
   { name: "remote but pinned to APAC", job: { location: "Remote (APAC)", remote: false }, keep: true },
@@ -120,8 +135,8 @@ describe("prefilter rules", () => {
 
 describe("prefilter ordering", () => {
   test("prioritizes company career boards before stronger aggregator matches", () => {
-    const aggregator = makeJob({ id: "a", source: "remotive", title: "Junior Developer", description: "React, TypeScript, Node." });
-    const companyPage = makeJob({ id: "b", source: "greenhouse", title: "Junior Developer", description: "React." });
+    const aggregator = makeJob({ id: "a", source: "remotive", title: "Junior Software Developer", description: "React, TypeScript, Node." });
+    const companyPage = makeJob({ id: "b", source: "greenhouse", title: "Junior Software Developer", description: "React." });
 
     const kept = prefilter([aggregator, companyPage], filters(), NOW);
 

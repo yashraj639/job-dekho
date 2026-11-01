@@ -13,7 +13,13 @@
       "id": 49922585,
       "author": "acme",
       "created_at": "2026-10-01T15:10:00.000Z",
-      "text": "<p>Acme Systems<em>|</em>Junior Backend Developer<em>|</em>REMOTE Worldwide<p>We build with Node.js and TypeScript.</p><p>Apply at our careers page.</p>"
+      "text": "<p>Acme Systems<em>|</em>Junior Backend Developer<em>|</em>REMOTE Worldwide</p><p>We build with Node.js and TypeScript.</p><p>Apply at our careers page.</p>"
+    },
+    {
+      "id": 49922587,
+      "author": "3gimbals",
+      "created_at": "2026-10-01T15:12:00.000Z",
+      "text": "3Gimbals<em>|</em><a href=\"https:&#x2F;&#x2F;www.linkedin.com&#x2F;jobs&#x2F;view&#x2F;4477632187\">https:&#x2F;&#x2F;www.linkedin.com&#x2F;jobs&#x2F;view&#x2F;4477632187</a> (US&#x2F;Remote)<p>Hiring entry &#x2F; mid-level full stack swe&#x27;s with strong experience with Python, React&#x2F;TypeScript, CSS, REST APIs, SQL&#x2F;PostgreSQL, and experience with LLMs, RAG, prompt engineering, and AWS cloud.<p>Requirement: US Citizenship, Ability to obtain government clearance"
     },
     {
       "id": 49922586,

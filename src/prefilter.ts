@@ -49,9 +49,22 @@ function isFresh(postedAt: string | null, cutoffMs: number): boolean {
 }
 
 function isLocationAcceptable(job: Job, allowedLocations: readonly string[]): boolean {
-  if (job.remote === true) return true;
-  if (!job.location) return false;
-  return countMatches(job.location, allowedLocations) > 0;
+  const location = job.location.trim();
+  if (!location) return job.remote === true;
+
+  const remoteMarker = keywordPattern("remote");
+  if (job.remote === true || remoteMarker.test(location)) {
+    const qualifier = location
+      .replace(remoteMarker, " ")
+      .replace(/[()[\],;|/\\-]+/g, " ")
+      .trim();
+    if (!qualifier) return true;
+
+    const allowedRegions = allowedLocations.filter((keyword) => keyword.toLowerCase() !== "remote");
+    return countMatches(qualifier, allowedRegions) > 0;
+  }
+
+  return countMatches(location, allowedLocations.filter((keyword) => keyword.toLowerCase() !== "remote")) > 0;
 }
 
 const DIRECT_SOURCES = new Set(["greenhouse", "lever", "ashby"]);
@@ -68,7 +81,9 @@ function filterByKeywords(
   for (const job of jobs) {
     const text = `${job.title}\n${job.description}`;
 
-    const roleHits = countMatches(text, filters.roleKeywords);
+    // A target role phrase must appear in the title. Descriptions often mention
+    // engineers, AI and frameworks for unrelated jobs such as support or sales.
+    const roleHits = countMatches(job.title, filters.roleKeywords);
     if (roleHits === 0) continue;
 
     const stackHits = countMatches(text, keywords);

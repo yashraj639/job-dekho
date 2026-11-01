@@ -34,6 +34,7 @@ describe("parseListingTitle", () => {
 
     expect(parsed.company).toBe("Acme Systems");
     expect(parsed.title).toBe("Junior Backend Developer");
+    expect(parsed.location).toBe("Remote (Worldwide)");
   });
 
   test("falls back to the parenthesised variant", () => {
@@ -42,7 +43,18 @@ describe("parseListingTitle", () => {
     );
 
     expect(parsed.company).toBe("PrairieLearn");
-    expect(parsed.title).toContain("Full-Stack Software Engineer");
+    expect(parsed.title).toBe("Full-Stack Software Engineer");
+    expect(parsed.location).toBe("Remote US");
+  });
+
+  test("parses a remote country qualifier when the title follows without a dash", () => {
+    const parsed = parseListingTitle(
+      "3Gimbals (US/Remote)Hiring entry / mid-level full stack swe's with strong experience",
+    );
+
+    expect(parsed.company).toBe("3Gimbals");
+    expect(parsed.location).toBe("US/Remote");
+    expect(parsed.title).toContain("full stack");
   });
 
   test("keeps the whole line when nothing matches", () => {
@@ -77,7 +89,7 @@ describe("fetchHn", () => {
 
     const jobs = await fetchHn();
 
-    expect(jobs).toHaveLength(2); // the deleted comment is skipped
+    expect(jobs).toHaveLength(3); // the deleted comment is skipped
     for (const job of jobs) {
       expect(JobSchema.safeParse(job).success).toBe(true);
     }
@@ -86,6 +98,7 @@ describe("fetchHn", () => {
     expect(first?.id).toBe("hn:49922584");
     expect(first?.company).toBe("PrairieLearn");
     expect(first?.title).toContain("Full-Stack Software Engineer");
+    expect(first?.location).toBe("Remote US");
     expect(first?.remote).toBe(true);
     expect(first?.postedAt).toBe("2026-10-01T15:02:37.000Z");
     expect(first?.description).toContain("open-source assessment platform");
@@ -93,9 +106,15 @@ describe("fetchHn", () => {
     const second = jobs[1];
     expect(second?.company).toBe("Acme Systems");
     expect(second?.title).toBe("Junior Backend Developer");
+    expect(second?.location).toBe("REMOTE Worldwide");
     expect(second?.description).toContain("Node.js and TypeScript");
+
+    const third = jobs[2];
+    expect(third?.company).toBe("3Gimbals");
+    expect(third?.location).toBe("US/Remote");
+    expect(third?.remote).toBe(true);
     expect(log).toHaveBeenCalledWith(
-      "source=hn thread=49922569 in=3 out=2 skipped=1",
+      "source=hn thread=49922569 in=4 out=3 skipped=1",
     );
     log.mockRestore();
   });

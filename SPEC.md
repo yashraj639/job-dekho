@@ -38,9 +38,9 @@ Direct company listings appear first when choosing which jobs to alert about. Ev
 
 ## Matching
 
-- The simple list matches at least one configured role keyword and one general technology keyword across title and description.
-- The resume list uses the same location, seniority, date and role checks, plus one `resumeKeywords` match. Exclude jobs already included in the simple list so a posting is not sent twice.
-- Keep remote jobs or jobs in configured locations such as India, Bengaluru, Remote and APAC.
+- The simple list matches at least one configured target-role phrase in the title and one general technology keyword across title and description. Role phrases in descriptions alone do not qualify a posting.
+- The resume list uses the same location, seniority, date and title-role checks, plus one `resumeKeywords` match. Exclude jobs already included in the simple list so a posting is not sent twice.
+- Keep India-based jobs and remote roles with no narrower geography or a configured region such as India, APAC, Global or Worldwide. Reject remote roles explicitly restricted to other countries or regions.
 - Reject senior titles and roles asking for 4 or more years of experience.
 - Skip known postings older than 30 days.
 - Keep the filtering stage pure so it can be tested without network or file access.

@@ -31,26 +31,37 @@ const ThreadSchema = z.object({
 
 const MAX_TITLE_CHARS = 120;
 
-/** Pull the company name and role out of a post's first line. */
-export function parseListingTitle(line: string): { company: string; title: string } {
+/** Pull the company, role and location out of a post's first line. */
+export function parseListingTitle(line: string): { company: string; title: string; location: string } {
   if (line.includes("|")) {
     // Canonical HN format: "Company | Role | Location".
-    const [rawCompany = "", rawTitle = ""] = line
+    const [rawCompany = "", rawTitle = "", rawLocation = ""] = line
       .split("|")
       .map((part) => part.trim());
     return {
       company: rawCompany.replace(/\s*[((][^)]*[))]\s*$/, "").slice(0, MAX_TITLE_CHARS),
       title: rawTitle.slice(0, MAX_TITLE_CHARS),
+      location: rawLocation.slice(0, MAX_TITLE_CHARS),
     };
   }
 
-  const parenthesised = /^(.+?)\s*[((]/.exec(line);
-  if (parenthesised?.[1]) {
+  const parenthesised = /^(.+?)\s*\(([^)]*)\)\s*(.*)$/.exec(line);
+  if (parenthesised?.[1] && parenthesised[2] !== undefined && parenthesised[3] !== undefined) {
     // Common variant: "Company (Remote US) — Full-Stack Engineer — …".
-    return { company: parenthesised[1].trim(), title: line.slice(0, MAX_TITLE_CHARS) };
+    const remainder = parenthesised[3].replace(/^[—–-]\s*/, "");
+    const title = remainder.split(/\s+[—–]\s+/)[0]?.trim() ?? "";
+    return {
+      company: parenthesised[1].trim().slice(0, MAX_TITLE_CHARS),
+      title: title.slice(0, MAX_TITLE_CHARS),
+      location: parenthesised[2].trim().slice(0, MAX_TITLE_CHARS),
+    };
   }
 
-  return { company: line.slice(0, MAX_TITLE_CHARS), title: line.slice(0, MAX_TITLE_CHARS) };
+  return {
+    company: line.slice(0, MAX_TITLE_CHARS),
+    title: line.slice(0, MAX_TITLE_CHARS),
+    location: "",
+  };
 }
 
 export function normalizeHnComment(
@@ -65,14 +76,19 @@ export function normalizeHnComment(
       .map((line) => line.trim())
       .find((line) => line.length > 0) ?? "";
   const parsed = parseListingTitle(headline);
+  const remoteQualifierInHeadline = /\(([^)]*\bremote\b[^)]*)\)/i.exec(headline)?.[1]?.trim();
+  const location =
+    (!parsed.location || parsed.location.trim().toLowerCase() === "remote") && remoteQualifierInHeadline
+      ? remoteQualifierInHeadline
+      : parsed.location;
 
   return JobSchema.parse({
     id: `${SOURCE}:${child.id}`,
     source: SOURCE,
     title: parsed.title || headline,
     company: parsed.company || child.author,
-    location: "",
-    remote: /remote/i.test(headline) ? true : null,
+    location,
+    remote: /remote/i.test(location || headline) ? true : null,
     url: `https://news.ycombinator.com/item?id=${child.id}`,
     description: truncateDescription(plain),
     postedAt: child.created_at,
