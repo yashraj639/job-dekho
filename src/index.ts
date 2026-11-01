@@ -34,10 +34,8 @@ async function main(): Promise<void> {
     `stage=state seen=${Object.keys(state.seen).length} notified=${state.notified.length} dryRun=${dryRun}`,
   );
 
-  // Built lazily so a dry run never needs Telegram credentials.
   let post: PostMessage | null = null;
 
-  /** Return only delivered job ids; failed and overflow jobs stay available next run. */
   const send = async (plan: readonly PlannedMessage[]): Promise<string[]> => {
     if (plan.length === 0) return [];
 
@@ -59,12 +57,15 @@ async function main(): Promise<void> {
   );
 
   const discoveryProvider = process.env.DISCOVERY_PROVIDER || "gemini";
-  const discoveryOnly = process.env.DISCOVERY_ONLY === "true" || process.env.GEMINI_ONLY === "true";
+  const discoveryEnabled = process.env.DISCOVERY_ENABLED !== "false";
+  const discoveryOnly = discoveryEnabled &&
+    (process.env.DISCOVERY_ONLY === "true" || process.env.GEMINI_ONLY === "true");
   const fetchDiscovery = discoveryProvider === "groq" ? () => fetchGroq(now) : () => fetchGemini(now);
-  console.log(`stage=mode provider=${discoveryProvider} discoveryOnly=${discoveryOnly}`);
+  console.log(`stage=mode provider=${discoveryEnabled ? discoveryProvider : "none"} discoveryOnly=${discoveryOnly}`);
 
-  // All enabled sources fetch independently; a dead source returns [] from inside.
-  const sourceRequests = discoveryOnly
+  const sourceRequests = !discoveryEnabled
+    ? [fetchRemotive(), fetchRemoteOk(), fetchHn(), fetchGreenhouse(companies.greenhouse), fetchLever(companies.lever), fetchAshby(companies.ashby)]
+    : discoveryOnly
     ? [fetchDiscovery()]
     : [
         fetchDiscovery(),

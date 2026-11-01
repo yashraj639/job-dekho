@@ -26,7 +26,7 @@ For a real local run, set those same environment variables and run `bun run src/
 
 - Primary discovery: Groq browser search uses `openai/gpt-oss-120b` to find fresh jobs and direct application links.
 - Direct company boards: Greenhouse, Lever and Ashby. Add company slugs in `config/companies.json`.
-- Trial mode currently runs Groq only (`DISCOVERY_PROVIDER=groq`, `DISCOVERY_ONLY=true`). Remotive, RemoteOK, Hacker News, Greenhouse, Lever and Ashby remain in the code and can be restored by changing `DISCOVERY_ONLY` to `false`.
+- The workflow currently uses the six direct/public feeds only. Groq discovery remains in the code but is paused with `DISCOVERY_ENABLED=false`; set it to `true` to try it again later.
 - `config/filters.json` controls role, technology, location, seniority and freshness matches. Direct company board listings are shown first.
 - A second **Resume match** alert catches additional jobs that overlap with the skills in `resumeKeywords`. Jobs already in the simple alerts are not repeated.
 

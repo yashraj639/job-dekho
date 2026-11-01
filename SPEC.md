@@ -33,7 +33,7 @@ src/
 
 1. Groq browser search with `openai/gpt-oss-120b`, which looks for fresh postings and direct application URLs.
 2. Direct company career pages: Greenhouse, Lever and Ashby, configured in `config/companies.json`.
-3. Fallback sources: Remotive, RemoteOK and Hacker News Who Is Hiring. The workflow pauses all fallback sources with `DISCOVERY_ONLY=true` during the trial.
+3. Fallback sources: Remotive, RemoteOK and Hacker News Who Is Hiring. The workflow currently pauses the optional discovery provider with `DISCOVERY_ENABLED=false`; setting it to `true` enables Groq or Gemini again.
 
 Direct company listings appear first when choosing which jobs to alert about. Every source returns `Job[]`, catches failures, uses a 10-second timeout, and retries once. A bad source must not stop the other sources.
 
