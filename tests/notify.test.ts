@@ -2,73 +2,49 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import {
   MAX_MESSAGES_PER_RUN,
   createTelegramPost,
-  formatHeartbeat,
   formatJobMessage,
+  formatResumeJobMessage,
   formatNoResults,
   formatOverflow,
   planMessages,
   sendMessages,
-  shouldSendHeartbeat,
-  type Match,
 } from "../src/notify";
-import type { Score } from "../src/types";
 import { makeJob } from "./helpers";
 
-function makeScore(overrides: Partial<Score> = {}): Score {
-  return {
-    score: 8.5,
-    verdict: "apply",
-    reason: "Next.js + TS + Claude pipeline, matches OpenLabs work",
-    matchedSkills: ["next.js"],
-    redFlags: ["part-time", "PST overlap needed"],
-    ...overrides,
-  };
-}
-
-function makeMatches(count: number): Match[] {
-  return Array.from({ length: count }, (_, index) => ({
-    job: makeJob({ id: `remotive:${index}` }),
-    score: makeScore(),
-  }));
+function makeMatches(count: number) {
+  return Array.from({ length: count }, (_, index) => makeJob({ id: `remotive:${index}` }));
 }
 
 describe("formatJobMessage", () => {
-  test("matches the SPEC.md §9 layout exactly", () => {
+  test("shows the role, company, location and direct listing link", () => {
     const job = makeJob({
-      title: "Junior Full-Stack Developer",
+      title: "Full-Stack AI Intern",
       location: "Remote",
       url: "https://example.com/job",
     });
-    const message = formatJobMessage(job, makeScore());
+    const message = formatJobMessage(job);
 
     expect(message).toBe(
       [
-        "🟢 8.5/10  Junior Full-Stack Developer",
+        "Full-Stack AI Intern",
         "Productiv Team · Remote",
-        "Why: Next.js + TS + Claude pipeline, matches OpenLabs work",
-        "Flags: part-time, PST overlap needed",
         "https://example.com/job",
       ].join("\n"),
     );
   });
 
-  test("drops the Flags line when there are none", () => {
-    const message = formatJobMessage(makeJob(), makeScore({ redFlags: [] }));
-
-    expect(message).not.toContain("Flags:");
-    expect(message.split("\n")).toHaveLength(4);
-  });
-
   test("falls back to Remote, then to location unknown", () => {
-    expect(formatJobMessage(makeJob({ location: "" }), makeScore())).toContain("Productiv Team · Remote");
+    expect(formatJobMessage(makeJob({ location: "" }))).toContain("Productiv Team · Remote");
     expect(
-      formatJobMessage(makeJob({ location: "", remote: false }), makeScore()),
+      formatJobMessage(makeJob({ location: "", remote: false })),
     ).toContain("Productiv Team · location unknown");
   });
+});
 
-  test("rounds the score to one decimal", () => {
-    expect(formatJobMessage(makeJob(), makeScore({ score: 7 }))).toStartWith("🟢 7.0/10");
-  });
+test("resume alerts are clearly labeled while keeping the short job layout", () => {
+  const job = makeJob({ id: "resume:1", title: "Backend Engineer" });
+
+  expect(formatResumeJobMessage(job)).toBe(`Resume match\n${formatJobMessage(job)}`);
 });
 
 describe("planMessages", () => {
@@ -102,6 +78,15 @@ describe("planMessages", () => {
     expect(planMessages([])).toEqual([]);
   });
 
+  test("labels only resume-specific extra jobs", () => {
+    const general = makeJob({ id: "general:1" });
+    const resumeOnly = makeJob({ id: "resume:1" });
+    const plan = planMessages([general, resumeOnly], new Set([resumeOnly.id]));
+
+    expect(plan[0]?.text).not.toStartWith("Resume match");
+    expect(plan[1]?.text).toStartWith("Resume match");
+  });
+
   test("overflow text is the exact spec string", () => {
     expect(formatOverflow(4)).toBe("+4 more, check logs.");
   });
@@ -116,8 +101,13 @@ describe("sendMessages", () => {
 
     const result = await sendMessages(planMessages(makeMatches(2)), post);
 
-    expect(result).toEqual({ sent: 2, failed: 0, failedJobIds: [] });
-    expect(posted[0]).toContain("🟢 8.5/10");
+    expect(result).toEqual({
+      sent: 2,
+      failed: 0,
+      sentJobIds: ["remotive:0", "remotive:1"],
+      failedJobIds: [],
+    });
+    expect(posted[0]).toContain("Junior Full Stack Developer");
     expect(posted).toHaveLength(2);
   });
 
@@ -133,6 +123,7 @@ describe("sendMessages", () => {
 
     expect(result.sent).toBe(2);
     expect(result.failed).toBe(1);
+    expect(result.sentJobIds).toEqual(["remotive:1", "remotive:2"]);
     expect(result.failedJobIds).toEqual(["remotive:0"]);
     expect(errorLog).toHaveBeenCalledWith("telegram job=remotive:0 error=chat not found");
     errorLog.mockRestore();
@@ -147,25 +138,10 @@ describe("sendMessages", () => {
     const result = await sendMessages(planMessages(makeMatches(12)), post);
 
     expect(result.failed).toBe(1);
+    expect(result.sentJobIds).toHaveLength(10);
     expect(result.failedJobIds).toEqual([]);
     expect(errorLog).toHaveBeenCalledWith("telegram summary error=rate limited");
     errorLog.mockRestore();
-  });
-});
-
-describe("heartbeat", () => {
-  test("fires on Monday only", () => {
-    expect(shouldSendHeartbeat(new Date("2026-10-26T02:30:00Z"))).toBe(true);
-    expect(shouldSendHeartbeat(new Date("2026-10-25T02:30:00Z"))).toBe(false);
-    expect(shouldSendHeartbeat(new Date("2026-10-30T02:30:00Z"))).toBe(false);
-  });
-
-  test("says nothing matched and proves the run happened", () => {
-    const message = formatHeartbeat(10, 1);
-
-    expect(message).toContain("0 new matches");
-    expect(message).toContain("fetched 10");
-    expect(message).toContain("scored 1");
   });
 });
 

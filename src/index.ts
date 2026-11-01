@@ -1,19 +1,15 @@
-import { loadCompanies, loadFilters, loadResume } from "./config";
+import { loadCompanies, loadFilters } from "./config";
 import { dedupe } from "./dedupe";
 import { errorMessage } from "./log";
 import {
   createTelegramPost,
-  formatHeartbeat,
   formatNoResults,
   planMessages,
   sendMessages,
-  shouldSendHeartbeat,
-  type Match,
   type PlannedMessage,
   type PostMessage,
 } from "./notify";
-import { prefilter } from "./prefilter";
-import { DEFAULT_MODEL, createGeminiGenerate, scoreJob, sleep } from "./score";
+import { prefilter, prefilterResume } from "./prefilter";
 import { fetchAshby } from "./sources/ashby";
 import { fetchGreenhouse } from "./sources/greenhouse";
 import { fetchHn } from "./sources/hn";
@@ -21,23 +17,10 @@ import { fetchLever } from "./sources/lever";
 import { fetchRemotive } from "./sources/remotive";
 import { fetchRemoteOk } from "./sources/remoteok";
 import { loadState, markNotified, markSeen, pruneState, saveState } from "./state";
-import type { Job, Score } from "./types";
 
 const STATE_PATH = "data/state.json";
 const FILTERS_PATH = "config/filters.json";
 const COMPANIES_PATH = "config/companies.json";
-const RESUME_PATH = "config/resume.md";
-
-// Gemini's free tier allows ~15 requests per minute, and a full batch is
-// capped at 15 calls. Spacing them out keeps the whole batch under the limit
-// instead of tripping a per-minute 429 partway through.
-const SCORE_GAP_MS = 5000;
-
-function printScore(job: Job, score: Score): void {
-  console.log(`${score.score.toFixed(1)}/10 ${score.verdict}  ${job.title} @ ${job.company}`);
-  console.log(`   why: ${score.reason}`);
-  if (score.redFlags.length > 0) console.log(`   flags: ${score.redFlags.join(", ")}`);
-}
 
 async function main(): Promise<void> {
   const dryRun = process.argv.includes("--dry-run");
@@ -45,7 +28,6 @@ async function main(): Promise<void> {
 
   const state = await loadState(STATE_PATH);
   const filters = await loadFilters(FILTERS_PATH);
-  const resume = await loadResume(RESUME_PATH);
   console.log(
     `stage=state seen=${Object.keys(state.seen).length} notified=${state.notified.length} dryRun=${dryRun}`,
   );
@@ -53,7 +35,7 @@ async function main(): Promise<void> {
   // Built lazily so a dry run never needs Telegram credentials.
   let post: PostMessage | null = null;
 
-  /** Returns the ids whose message failed to send, so they can be retried tomorrow. */
+  /** Return only delivered job ids; failed and overflow jobs stay available next run. */
   const send = async (plan: readonly PlannedMessage[]): Promise<string[]> => {
     if (plan.length === 0) return [];
 
@@ -66,7 +48,7 @@ async function main(): Promise<void> {
     post ??= createTelegramPost();
     const result = await sendMessages(plan, post);
     console.log(`stage=notify sent=${result.sent} failed=${result.failed}`);
-    return result.failedJobIds;
+    return result.sentJobIds;
   };
 
   const companies = await loadCompanies(COMPANIES_PATH);
@@ -88,50 +70,30 @@ async function main(): Promise<void> {
 
   if (fetched.length === 0) {
     await send([{ text: formatNoResults(), jobId: null }]);
-    console.log("stage=summary fetched=0 deduped=0 prefiltered=0 scored=0 matches=0 sources=6");
+    console.log("stage=summary fetched=0 deduped=0 matched=0 notified=0 sources=6");
     return;
   }
 
   const deduped = dedupe(fetched, state);
   console.log(`stage=dedupe in=${fetched.length} out=${deduped.length}`);
 
-  const kept = prefilter(deduped, filters, now);
-  console.log(`stage=prefilter in=${deduped.length} out=${kept.length}`);
+  const matches = prefilter(deduped, filters, now);
+  const generalIds = new Set(matches.map((job) => job.id));
+  const resumeMatches = prefilterResume(deduped, filters, now).filter((job) => !generalIds.has(job.id));
+  const resumeIds = new Set(resumeMatches.map((job) => job.id));
+  const toNotify = [...matches, ...resumeMatches];
+  console.log(`stage=match general=${matches.length} resumeExtra=${resumeMatches.length}`);
+  const sentIds = new Set(await send(planMessages(toNotify, resumeIds)));
 
-  // `||`, not `??`: an empty LLM_MODEL (a blank .env line, an unset CI var)
-  // must fall back to the default instead of becoming a model id of "".
-  const modelId = process.env.LLM_MODEL || DEFAULT_MODEL;
-  const generate = createGeminiGenerate(modelId);
-  console.log(`stage=score model=${modelId} in=${kept.length}`);
-
-  const scored: Match[] = [];
-  for (const [i, job] of kept.entries()) {
-    if (i > 0) await sleep(SCORE_GAP_MS);
-    const score = await scoreJob(job, resume, generate);
-    if (score) scored.push({ job, score });
-  }
-  console.log(`stage=score out=${scored.length} skipped=${kept.length - scored.length}`);
-
-  for (const { job, score } of scored) printScore(job, score);
-
-  const matches = scored.filter(({ score }) => score.score >= filters.notifyThreshold);
-  const failedIds = new Set(await send(planMessages(matches)));
-
-  if (shouldSendHeartbeat(now) && matches.length === 0) {
-    await send([{ text: formatHeartbeat(fetched.length, scored.length), jobId: null }]);
-  }
-
-  // Only jobs we scored are marked seen. A job whose alert failed to send stays
-  // unseen so tomorrow's run tries again.
   if (dryRun) {
     console.log("stage=state skipped dry-run (no writes)");
   } else {
     let next = state;
-    for (const { job } of scored) {
-      if (!failedIds.has(job.id)) next = markSeen(next, job.id, now);
-    }
-    for (const { job } of matches) {
-      if (!failedIds.has(job.id)) next = markNotified(next, job.id);
+    for (const job of toNotify) {
+      if (sentIds.has(job.id)) {
+        next = markSeen(next, job.id, now);
+        next = markNotified(next, job.id);
+      }
     }
     next = pruneState(next, now);
     await saveState(STATE_PATH, next);
@@ -141,7 +103,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `stage=summary fetched=${fetched.length} deduped=${deduped.length} prefiltered=${kept.length} scored=${scored.length} matches=${matches.length} sources=6`,
+    `stage=summary fetched=${fetched.length} deduped=${deduped.length} general=${matches.length} resumeExtra=${resumeMatches.length} sources=6`,
   );
 }
 

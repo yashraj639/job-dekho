@@ -54,14 +54,16 @@ function isLocationAcceptable(job: Job, allowedLocations: readonly string[]): bo
   return countMatches(job.location, allowedLocations) > 0;
 }
 
-/**
- * Cheap rules that run before the LLM. Pure: no network, no files, no clock.
- * Returns the survivors, best keyword coverage first, capped at
- * `filters.maxJobsToScore`.
- */
-export function prefilter(jobs: readonly Job[], filters: Filters, now: Date): Job[] {
+const DIRECT_SOURCES = new Set(["greenhouse", "lever", "ashby"]);
+
+function filterByKeywords(
+  jobs: readonly Job[],
+  filters: Filters,
+  keywords: readonly string[],
+  now: Date,
+): Job[] {
   const cutoffMs = now.getTime() - filters.maxAgeDays * MS_PER_DAY;
-  const scored: { job: Job; hits: number }[] = [];
+  const ranked: { job: Job; hits: number }[] = [];
 
   for (const job of jobs) {
     const text = `${job.title}\n${job.description}`;
@@ -69,7 +71,7 @@ export function prefilter(jobs: readonly Job[], filters: Filters, now: Date): Jo
     const roleHits = countMatches(text, filters.roleKeywords);
     if (roleHits === 0) continue;
 
-    const stackHits = countMatches(text, filters.stackKeywords);
+    const stackHits = countMatches(text, keywords);
     if (stackHits === 0) continue;
 
     if (countMatches(job.title, filters.rejectTitleKeywords) > 0) continue;
@@ -77,10 +79,24 @@ export function prefilter(jobs: readonly Job[], filters: Filters, now: Date): Jo
     if (!isLocationAcceptable(job, filters.allowedLocations)) continue;
     if (!isFresh(job.postedAt, cutoffMs)) continue;
 
-    scored.push({ job, hits: roleHits + stackHits });
+    ranked.push({ job, hits: roleHits + stackHits });
   }
 
-  // Array#sort is stable, so equal-hit jobs keep their source order.
-  scored.sort((a, b) => b.hits - a.hits);
-  return scored.slice(0, filters.maxJobsToScore).map((entry) => entry.job);
+  // Stable sort keeps each source's configured company order when hits tie.
+  ranked.sort(
+    (a, b) =>
+      Number(!DIRECT_SOURCES.has(a.job.source)) - Number(!DIRECT_SOURCES.has(b.job.source)) ||
+      b.hits - a.hits,
+  );
+  return ranked.map((entry) => entry.job);
+}
+
+/** General job finder. Direct company career boards come before aggregators. */
+export function prefilter(jobs: readonly Job[], filters: Filters, now: Date): Job[] {
+  return filterByKeywords(jobs, filters, filters.stackKeywords, now);
+}
+
+/** Resume-specific skills use the same role, location, seniority and freshness rules. */
+export function prefilterResume(jobs: readonly Job[], filters: Filters, now: Date): Job[] {
+  return filterByKeywords(jobs, filters, filters.resumeKeywords, now);
 }

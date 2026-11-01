@@ -1,10 +1,9 @@
 {
-  "roleKeywords": ["intern", "internship", "junior", "entry level", "fresher", "graduate", "trainee", "engineer", "developer"],
-  "stackKeywords": ["full stack", "fullstack", "next.js", "nextjs", "react", "typescript", "node"],
+  "roleKeywords": ["intern", "internship", "full time", "full-time", "engineer", "developer"],
+  "stackKeywords": ["ai", "artificial intelligence", "machine learning", "full stack", "fullstack", "next.js", "nextjs", "react", "typescript", "node"],
+  "resumeKeywords": ["javascript", "typescript", "react", "next.js", "node.js", "express", "tailwind", "postgresql", "mongodb", "prisma", "langchain", "langgraph", "rag", "openai", "gemini"],
   "rejectTitleKeywords": ["senior", "staff", "principal", "lead", "manager", "director", "head of"],
   "rejectYearsOfExperience": 4,
-  "allowedLocations": ["India", "Bengaluru", "Remote", "Anywhere", "APAC"],
-  "maxAgeDays": 30,
-  "maxJobsToScore": 15,
-  "notifyThreshold": 7
+  "allowedLocations": ["India", "Bengaluru", "Bangalore", "Hyderabad", "Mumbai", "Delhi", "New Delhi", "Pune", "Chennai", "Gurugram", "Gurgaon", "Noida", "Kolkata", "Kochi", "Ahmedabad", "Jaipur", "Thiruvananthapuram", "Remote", "Anywhere", "APAC"],
+  "maxAgeDays": 30
 }

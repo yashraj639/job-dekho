@@ -1,9 +1,9 @@
 {
   "roleKeywords": ["junior"],
   "stackKeywords": ["react"],
+  "resumeKeywords": ["typescript"],
   "rejectTitleKeywords": [],
   "rejectYearsOfExperience": 4,
   "allowedLocations": ["India"],
-  "maxAgeDays": "thirty",
-  "maxJobsToScore": 50
+  "maxAgeDays": "thirty"
 }

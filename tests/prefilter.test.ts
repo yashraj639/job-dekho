@@ -1,20 +1,19 @@
 import { describe, expect, test } from "bun:test";
 import type { Filters } from "../src/config";
-import { prefilter } from "../src/prefilter";
+import { prefilter, prefilterResume } from "../src/prefilter";
 import type { Job } from "../src/types";
 import { makeJob } from "./helpers";
 
 const NOW = new Date("2026-10-25T00:00:00Z");
 
 const BASE_FILTERS: Filters = {
-  roleKeywords: ["intern", "internship", "junior", "entry level", "fresher", "graduate", "trainee"],
-  stackKeywords: ["full stack", "fullstack", "next.js", "nextjs", "react", "typescript", "node"],
+  roleKeywords: ["intern", "internship", "junior", "entry level", "fresher", "graduate", "trainee", "engineer", "developer", "full time", "full-time"],
+  stackKeywords: ["ai", "artificial intelligence", "machine learning", "full stack", "fullstack", "next.js", "nextjs", "react", "typescript", "node"],
+  resumeKeywords: ["typescript", "react", "prisma", "langchain"],
   rejectTitleKeywords: ["senior", "staff", "principal", "lead", "manager", "director", "head of"],
   rejectYearsOfExperience: 4,
-  allowedLocations: ["India", "Bengaluru", "Remote", "Anywhere", "APAC"],
+  allowedLocations: ["India", "Bengaluru", "Hyderabad", "Mumbai", "Remote", "Anywhere", "APAC"],
   maxAgeDays: 30,
-  maxJobsToScore: 50,
-  notifyThreshold: 7,
 };
 
 function filters(overrides: Partial<Filters> = {}): Filters {
@@ -47,20 +46,22 @@ const CASES: Case[] = [
     keep: true,
   },
   {
-    name: "no role level signal at all",
-    job: { title: "Software Engineer", description: "React and TypeScript." },
+    name: "no role or employment signal at all",
+    job: { title: "Product Analyst", description: "React and TypeScript." },
     keep: false,
   },
   {
     name: "\"internal\" is not mistaken for \"intern\"",
     job: {
-      title: "Software Engineer",
+      title: "Product Analyst",
       description: "You will own our internal tooling. React and TypeScript.",
     },
     keep: false,
   },
 
   // Stack: at least one must match
+  { name: "AI engineering role", job: { title: "AI Engineer", description: "Build artificial intelligence tools." }, keep: true },
+  { name: "full-time developer role", job: { title: "Full-Time Developer", description: "Build with React." }, keep: true },
   {
     name: "no matching stack keyword",
     job: { title: "Junior Marketing Assistant", description: "Content writing only." },
@@ -94,6 +95,7 @@ const CASES: Case[] = [
   // Location: remote wins, otherwise the location must be allowed
   { name: "remote overrides an overseas location", job: { location: "Berlin, Germany" }, keep: true },
   { name: "on-site in India is fine", job: { location: "Bengaluru, India", remote: false }, keep: true },
+  { name: "city-only Indian location is fine", job: { location: "Hyderabad", remote: false }, keep: true },
   { name: "remote but pinned to APAC", job: { location: "Remote (APAC)", remote: false }, keep: true },
   { name: "on-site in Berlin is rejected", job: { location: "Berlin, Germany", remote: false }, keep: false },
   { name: "unknown location, not remote", job: { location: "", remote: false }, keep: false },
@@ -116,28 +118,51 @@ describe("prefilter rules", () => {
   }
 });
 
-describe("prefilter cap and ranking", () => {
-  test("keeps the jobs with the most keyword hits, capped", () => {
-    const fewHits = makeJob({ id: "a", title: "Junior Developer", description: "React." });
-    const manyHits = makeJob({ id: "b", title: "Junior Developer", description: "React, TypeScript, Node." });
-    const alsoFew = makeJob({ id: "c", title: "Intern Developer", description: "React." });
+describe("prefilter ordering", () => {
+  test("prioritizes company career boards before stronger aggregator matches", () => {
+    const aggregator = makeJob({ id: "a", source: "remotive", title: "Junior Developer", description: "React, TypeScript, Node." });
+    const companyPage = makeJob({ id: "b", source: "greenhouse", title: "Junior Developer", description: "React." });
 
-    const kept = prefilter([fewHits, manyHits, alsoFew], filters({ maxJobsToScore: 2 }), NOW);
+    const kept = prefilter([aggregator, companyPage], filters(), NOW);
 
     expect(kept.map((job) => job.id)).toEqual(["b", "a"]);
   });
 
-  test("everything survives when under the cap", () => {
-    const jobs = [makeJob({ id: "a" }), makeJob({ id: "b" })];
+  test("returns every eligible listing", () => {
+    const jobs = Array.from({ length: 20 }, (_, index) => makeJob({ id: `job:${index}` }));
 
-    expect(prefilter(jobs, filters(), NOW).map((job) => job.id)).toEqual(["a", "b"]);
+    expect(prefilter(jobs, filters(), NOW)).toHaveLength(20);
   });
 
   test("does not mutate the input array", () => {
     const jobs = [makeJob({ id: "a" }), makeJob({ id: "b" })];
 
-    prefilter(jobs, filters({ maxJobsToScore: 1 }), NOW);
+    prefilter(jobs, filters(), NOW);
 
     expect(jobs.map((job) => job.id)).toEqual(["a", "b"]);
+  });
+});
+
+describe("resume matching", () => {
+  test("keeps a role that matches a resume skill outside the general technology list", () => {
+    const role = makeJob({
+      title: "Backend Engineer",
+      description: "Build APIs with Prisma and PostgreSQL.",
+      location: "Bengaluru, India",
+      remote: false,
+    });
+
+    expect(prefilterResume([role], filters(), NOW).map((job) => job.id)).toEqual([role.id]);
+  });
+
+  test("rejects roles with no resume skill overlap", () => {
+    const role = makeJob({
+      title: "Backend Engineer",
+      description: "Build APIs with Ruby and Rails.",
+      location: "Bengaluru, India",
+      remote: false,
+    });
+
+    expect(prefilterResume([role], filters(), NOW)).toEqual([]);
   });
 });

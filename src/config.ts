@@ -4,15 +4,12 @@ import { errorMessage } from "./log";
 export const FiltersSchema = z.object({
   roleKeywords: z.array(z.string().min(1)).min(1),
   stackKeywords: z.array(z.string().min(1)).min(1),
+  resumeKeywords: z.array(z.string().min(1)).min(1),
   rejectTitleKeywords: z.array(z.string().min(1)),
   /** Reject when the posting asks for this many years of experience or more. */
   rejectYearsOfExperience: z.number().int().positive(),
   allowedLocations: z.array(z.string().min(1)).min(1),
   maxAgeDays: z.number().int().positive(),
-  /** Hard ceiling on how many jobs reach the LLM. */
-  maxJobsToScore: z.number().int().positive(),
-  /** Scores at or above this are sent to Telegram. */
-  notifyThreshold: z.number().min(0).max(10),
 });
 export type Filters = z.infer<typeof FiltersSchema>;
 
@@ -48,14 +45,4 @@ export type Companies = z.infer<typeof CompaniesSchema>;
 
 export async function loadCompanies(path: string): Promise<Companies> {
   return loadConfig(path, CompaniesSchema);
-}
-
-/** The resume is personal data: callers must never log the result. */
-export async function loadResume(path: string): Promise<string> {
-  const file = Bun.file(path);
-  if (!(await file.exists())) throw new Error(`missing resume file ${path}`);
-
-  const text = (await file.text()).trim();
-  if (!text) throw new Error(`resume file ${path} is empty`);
-  return text;
 }

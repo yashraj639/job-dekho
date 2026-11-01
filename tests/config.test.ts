@@ -7,8 +7,10 @@ const SHIPPED_FILTERS = join(import.meta.dir, "..", "config", "filters.json");
 test("the shipped config/filters.json is valid", async () => {
   const filters = await loadFilters(SHIPPED_FILTERS);
 
-  expect(filters.roleKeywords).toContain("junior");
-  expect(filters.maxJobsToScore).toBe(15);
+  expect(filters.roleKeywords).toContain("intern");
+  expect(filters.stackKeywords).toContain("artificial intelligence");
+  expect(filters.resumeKeywords).toContain("langchain");
+  expect(filters.allowedLocations).toContain("Hyderabad");
 });
 
 test("a missing config file is a clear error", async () => {

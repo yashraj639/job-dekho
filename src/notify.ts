@@ -1,64 +1,44 @@
 import { z } from "zod";
 import { fetchJson } from "./http";
 import { errorMessage } from "./log";
-import type { Job, Score } from "./types";
+import type { Job } from "./types";
 
 export const MAX_MESSAGES_PER_RUN = 10;
 
-/**
- * Heartbeat day. Stateless on purpose: a missed Monday heartbeat means the
- * scheduled run did not happen, which is exactly what we want to learn.
- * CI runs in UTC, so this is Monday UTC.
- */
-export const HEARTBEAT_WEEKDAY = 1;
-
-export interface Match {
-  job: Job;
-  score: Score;
-}
-
 export interface PlannedMessage {
   text: string;
-  /** null for summary lines (overflow, heartbeat, alerts). */
+  /** null for summary lines. */
   jobId: string | null;
 }
 
-/** The exact shape from SPEC.md §9. Plain text, so titles cannot break formatting. */
-export function formatJobMessage(job: Job, score: Score): string {
+/** Keep the alert short: role, company, location and the original listing link. */
+export function formatJobMessage(job: Job): string {
   const location = job.location || (job.remote ? "Remote" : "location unknown");
-  const lines = [
-    `🟢 ${score.score.toFixed(1)}/10  ${job.title}`,
-    `${job.company} · ${location}`,
-    `Why: ${score.reason}`,
-  ];
-  if (score.redFlags.length > 0) lines.push(`Flags: ${score.redFlags.join(", ")}`);
-  lines.push(job.url);
-  return lines.join("\n");
+  return [job.title, `${job.company} · ${location}`, job.url].join("\n");
+}
+
+export function formatResumeJobMessage(job: Job): string {
+  return [`Resume match`, formatJobMessage(job)].join("\n");
 }
 
 export function formatOverflow(extra: number): string {
   return `+${extra} more, check logs.`;
 }
 
-export function formatHeartbeat(fetched: number, scored: number): string {
-  return `0 new matches this week. Pipeline is alive: fetched ${fetched}, scored ${scored}.`;
-}
-
 export function formatNoResults(): string {
   return "⚠️ Every source returned 0 jobs today. That usually means something broke, not an empty market.";
 }
 
-export function shouldSendHeartbeat(now: Date): boolean {
-  return now.getDay() === HEARTBEAT_WEEKDAY;
-}
-
 /** Cap at 10 job messages, then one overflow line. Pure, so dry-run can preview it. */
-export function planMessages(matches: readonly Match[]): PlannedMessage[] {
-  const plan: PlannedMessage[] = matches
+export function planMessages(jobs: readonly Job[], resumeMatchIds: ReadonlySet<string> = new Set()): PlannedMessage[] {
+  const plan: PlannedMessage[] = jobs
     .slice(0, MAX_MESSAGES_PER_RUN)
-    .map((match) => ({ text: formatJobMessage(match.job, match.score), jobId: match.job.id }));
+    .map((job) => ({
+      text: resumeMatchIds.has(job.id) ? formatResumeJobMessage(job) : formatJobMessage(job),
+      jobId: job.id,
+    }));
 
-  const extra = matches.length - MAX_MESSAGES_PER_RUN;
+  const extra = jobs.length - MAX_MESSAGES_PER_RUN;
   if (extra > 0) plan.push({ text: formatOverflow(extra), jobId: null });
 
   return plan;
@@ -70,15 +50,17 @@ export type PostMessage = (text: string) => Promise<void>;
 export async function sendMessages(
   plan: readonly PlannedMessage[],
   post: PostMessage,
-): Promise<{ sent: number; failed: number; failedJobIds: string[] }> {
+): Promise<{ sent: number; failed: number; sentJobIds: string[]; failedJobIds: string[] }> {
   let sent = 0;
   let failed = 0;
+  const sentJobIds: string[] = [];
   const failedJobIds: string[] = [];
 
   for (const message of plan) {
     try {
       await post(message.text);
       sent++;
+      if (message.jobId) sentJobIds.push(message.jobId);
     } catch (error) {
       failed++;
       if (message.jobId) failedJobIds.push(message.jobId);
@@ -87,7 +69,7 @@ export async function sendMessages(
     }
   }
 
-  return { sent, failed, failedJobIds };
+  return { sent, failed, sentJobIds, failedJobIds };
 }
 
 const TelegramResponseSchema = z.object({
