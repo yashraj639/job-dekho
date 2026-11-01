@@ -12,6 +12,7 @@ import {
 import { prefilter, prefilterResume } from "./prefilter";
 import { fetchAshby } from "./sources/ashby";
 import { fetchGreenhouse } from "./sources/greenhouse";
+import { fetchGemini } from "./sources/gemini";
 import { fetchHn } from "./sources/hn";
 import { fetchLever } from "./sources/lever";
 import { fetchRemotive } from "./sources/remotive";
@@ -56,8 +57,9 @@ async function main(): Promise<void> {
     `stage=config boards greenhouse=${companies.greenhouse.length} lever=${companies.lever.length} ashby=${companies.ashby.length}`,
   );
 
-  // All six sources fetch independently; a dead source returns [] from inside.
+  // All seven sources fetch independently; a dead source returns [] from inside.
   const perSource = await Promise.all([
+    fetchGemini(now),
     fetchRemotive(),
     fetchRemoteOk(),
     fetchHn(),
@@ -70,7 +72,7 @@ async function main(): Promise<void> {
 
   if (fetched.length === 0) {
     await send([{ text: formatNoResults(), jobId: null }]);
-    console.log("stage=summary fetched=0 deduped=0 matched=0 notified=0 sources=6");
+    console.log("stage=summary fetched=0 deduped=0 matched=0 notified=0 sources=7");
     return;
   }
 
@@ -103,7 +105,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `stage=summary fetched=${fetched.length} deduped=${deduped.length} general=${matches.length} resumeExtra=${resumeMatches.length} sources=6`,
+    `stage=summary fetched=${fetched.length} deduped=${deduped.length} general=${matches.length} resumeExtra=${resumeMatches.length} sources=7`,
   );
 }
 

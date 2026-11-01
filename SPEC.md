@@ -1,6 +1,6 @@
 # JobDekho
 
-JobDekho checks for India-based or remote AI and full-stack engineering internships and full-time roles, then sends matching listings to Telegram. It finds jobs; it does not apply for the user.
+JobDekho uses Gemini web search as the primary discovery source for India-based or India-eligible remote AI and full-stack engineering internships and full-time roles, then sends matching listings to Telegram. It keeps Remotive, RemoteOK and Hacker News as fallback sources during the first-week trial. It finds jobs; it does not apply for the user.
 
 ## Scope
 
@@ -31,8 +31,9 @@ src/
 
 ## Sources and priority
 
-1. Direct company career pages: Greenhouse, Lever and Ashby, configured in `config/companies.json`.
-2. Backup sources: Remotive, RemoteOK and Hacker News Who Is Hiring.
+1. Gemini Google Search grounding, which looks for fresh postings and direct application URLs.
+2. Direct company career pages: Greenhouse, Lever and Ashby, configured in `config/companies.json`.
+3. Trial fallback sources: Remotive, RemoteOK and Hacker News Who Is Hiring.
 
 Direct company listings appear first when choosing which jobs to alert about. Every source returns `Job[]`, catches failures, uses a 10-second timeout, and retries once. A bad source must not stop the other sources.
 
@@ -40,7 +41,7 @@ Direct company listings appear first when choosing which jobs to alert about. Ev
 
 - The simple list matches at least one configured target-role phrase in the title and one general technology keyword across title and description. Role phrases in descriptions alone do not qualify a posting.
 - The resume list uses the same location, seniority, date and title-role checks, plus one `resumeKeywords` match. Exclude jobs already included in the simple list so a posting is not sent twice.
-- Keep India-based jobs and remote roles with no narrower geography or a configured region such as India, APAC, Global or Worldwide. Reject remote roles explicitly restricted to other countries or regions.
+- Keep India-based jobs and remote roles with no narrower geography or a configured region such as India, APAC, Global or Worldwide. Reject remote roles explicitly restricted to other countries or regions. Gemini results set `remoteFromIndia` only when the listing explicitly permits working from India.
 - Reject senior titles and roles asking for 4 or more years of experience.
 - Skip known postings older than 30 days.
 - Keep the filtering stage pure so it can be tested without network or file access.
@@ -59,7 +60,7 @@ If a Telegram send fails, leave that job unseen so the next run retries it. `--d
 
 ## Secrets and safety
 
-The only required secrets are `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`. Never log the token. Job descriptions are untrusted data and are never executed. Store only skill keywords from the resume, never the PDF or personal contact details.
+The required secrets are `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` and `GEMINI_API_KEY` (or the legacy `GOOGLE_GENERATIVE_AI_API_KEY` name). Never log them. Job descriptions and search results are untrusted data and are never executed. Store only skill keywords from the resume, never the PDF or personal contact details.
 
 ## Commands
 
