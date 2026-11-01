@@ -4,7 +4,7 @@ Guidance for coding agents working on JobDekho. Read `SPEC.md` first; it is the 
 
 ## Project
 
-JobDekho uses Gemini web search to find India-based or India-eligible remote AI and full-stack engineering internships and full-time roles. It checks direct company career boards and public fallback sources, then sends short alerts to Telegram. It does not apply for the user.
+JobDekho uses Groq browser search to find India-based or India-eligible remote AI and full-stack engineering internships and full-time roles. It checks direct company career boards and public fallback sources, then sends short alerts to Telegram. It does not apply for the user.
 
 ## Stack and commands
 

@@ -13,6 +13,7 @@ import { prefilter, prefilterResume } from "./prefilter";
 import { fetchAshby } from "./sources/ashby";
 import { fetchGreenhouse } from "./sources/greenhouse";
 import { fetchGemini } from "./sources/gemini";
+import { fetchGroq } from "./sources/groq";
 import { fetchHn } from "./sources/hn";
 import { fetchLever } from "./sources/lever";
 import { fetchRemotive } from "./sources/remotive";
@@ -57,14 +58,16 @@ async function main(): Promise<void> {
     `stage=config boards greenhouse=${companies.greenhouse.length} lever=${companies.lever.length} ashby=${companies.ashby.length}`,
   );
 
-  const geminiOnly = process.env.GEMINI_ONLY === "true";
-  console.log(`stage=mode geminiOnly=${geminiOnly}`);
+  const discoveryProvider = process.env.DISCOVERY_PROVIDER || "gemini";
+  const discoveryOnly = process.env.DISCOVERY_ONLY === "true" || process.env.GEMINI_ONLY === "true";
+  const fetchDiscovery = discoveryProvider === "groq" ? () => fetchGroq(now) : () => fetchGemini(now);
+  console.log(`stage=mode provider=${discoveryProvider} discoveryOnly=${discoveryOnly}`);
 
   // All enabled sources fetch independently; a dead source returns [] from inside.
-  const sourceRequests = geminiOnly
-    ? [fetchGemini(now)]
+  const sourceRequests = discoveryOnly
+    ? [fetchDiscovery()]
     : [
-        fetchGemini(now),
+        fetchDiscovery(),
         fetchRemotive(),
         fetchRemoteOk(),
         fetchHn(),

@@ -1,6 +1,6 @@
 # JobDekho
 
-JobDekho uses Gemini web search as the primary discovery source for India-based or India-eligible remote AI and full-stack engineering internships and full-time roles, then sends matching listings to Telegram. It keeps Remotive, RemoteOK and Hacker News as fallback sources during the first-week trial. It finds jobs; it does not apply for the user.
+JobDekho uses Groq browser search as the primary discovery source for India-based or India-eligible remote AI and full-stack engineering internships and full-time roles, then sends matching listings to Telegram. It keeps Remotive, RemoteOK and Hacker News as fallback sources in the code. It finds jobs; it does not apply for the user.
 
 ## Scope
 
@@ -31,9 +31,9 @@ src/
 
 ## Sources and priority
 
-1. Gemini Google Search grounding, which looks for fresh postings and direct application URLs.
+1. Groq browser search with `openai/gpt-oss-120b`, which looks for fresh postings and direct application URLs.
 2. Direct company career pages: Greenhouse, Lever and Ashby, configured in `config/companies.json`.
-3. Fallback sources: Remotive, RemoteOK and Hacker News Who Is Hiring. The workflow can pause all fallback sources with `GEMINI_ONLY=true` during the trial.
+3. Fallback sources: Remotive, RemoteOK and Hacker News Who Is Hiring. The workflow pauses all fallback sources with `DISCOVERY_ONLY=true` during the trial.
 
 Direct company listings appear first when choosing which jobs to alert about. Every source returns `Job[]`, catches failures, uses a 10-second timeout, and retries once. A bad source must not stop the other sources.
 
@@ -60,7 +60,7 @@ If a Telegram send fails, leave that job unseen so the next run retries it. `--d
 
 ## Secrets and safety
 
-The required secrets are `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` and `GEMINI_API_KEY` (or the legacy `GOOGLE_GENERATIVE_AI_API_KEY` name). Never log them. Job descriptions and search results are untrusted data and are never executed. Store only skill keywords from the resume, never the PDF or personal contact details.
+The required secrets are `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` and `GROQ_API_KEY`. Never log them. Job descriptions and search results are untrusted data and are never executed. Store only skill keywords from the resume, never the PDF or personal contact details.
 
 ## Commands
 

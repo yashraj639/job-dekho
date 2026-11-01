@@ -1,6 +1,6 @@
 # JobDekho
 
-A small daily job finder for India-based or India-eligible remote AI and full-stack engineering internships and full-time roles. It uses Gemini web search for discovery, checks company career pages and public sources as fallback, and sends matching listings to Telegram.
+A small daily job finder for India-based or India-eligible remote AI and full-stack engineering internships and full-time roles. It uses Groq browser search for discovery, checks company career pages and public sources as fallback, and sends matching listings to Telegram.
 
 It finds jobs. It does not apply for you.
 
@@ -16,7 +16,7 @@ bun run src/index.ts --dry-run
 
 The daily GitHub Actions run needs three repository secrets:
 
-- `GEMINI_API_KEY` (or the existing `GOOGLE_GENERATIVE_AI_API_KEY` secret)
+- `GROQ_API_KEY`
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_CHAT_ID`
 
@@ -24,9 +24,9 @@ For a real local run, set those same environment variables and run `bun run src/
 
 ## What it checks
 
-- Primary discovery: Gemini uses Google Search grounding to find fresh jobs and direct application links.
+- Primary discovery: Groq browser search uses `openai/gpt-oss-120b` to find fresh jobs and direct application links.
 - Direct company boards: Greenhouse, Lever and Ashby. Add company slugs in `config/companies.json`.
-- Trial mode currently runs Gemini only (`GEMINI_ONLY=true`). Remotive, RemoteOK, Hacker News, Greenhouse, Lever and Ashby remain in the code and can be restored by changing that workflow value to `false`.
+- Trial mode currently runs Groq only (`DISCOVERY_PROVIDER=groq`, `DISCOVERY_ONLY=true`). Remotive, RemoteOK, Hacker News, Greenhouse, Lever and Ashby remain in the code and can be restored by changing `DISCOVERY_ONLY` to `false`.
 - `config/filters.json` controls role, technology, location, seniority and freshness matches. Direct company board listings are shown first.
 - A second **Resume match** alert catches additional jobs that overlap with the skills in `resumeKeywords`. Jobs already in the simple alerts are not repeated.
 
